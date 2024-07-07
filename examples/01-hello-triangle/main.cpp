@@ -4,12 +4,35 @@ int main()
 {
     vgfw::hello();
 
-    auto window = vgfw::createWindow({.Width = 800, .Height = 600, .Title = "01-hello-triangle"});
+    std::shared_ptr<vgfw::Window> window = nullptr;
+
+    if (!vgfw::createWindow({.Width = 800, .Height = 600, .Title = "01-hello-triangle"}, window))
+    {
+        return -1;
+    }
+
+    vgfw::VulkanRHI rhi {};
+
+#ifndef N_DEBUG
+    bool enableValidationLayers = true;
+#else
+    bool enableValidationLayers = false;
+#endif
+
+    if (!rhi.Init(window, enableValidationLayers))
+    {
+        return -1;
+    }
 
     while (!window->ShouldClose())
     {
-        window->OnTick();
+        if (!window->OnTick())
+        {
+            break;
+        }
     }
+
+    rhi.Shutdown();
 
     return 0;
 }
