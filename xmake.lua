@@ -34,7 +34,7 @@ add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode"})
 add_repositories("my-xmake-repo https://github.com/zzxzzk115/xmake-repo.git dev")
 
 -- add requirements
-add_requires("glad", "glfw", "glm", "spdlog", "stb")
+add_requires("fg", "glad", "glfw", "glm", "spdlog", "stb")
 
 -- target defination, name: vgfw
 target("vgfw")
@@ -50,6 +50,7 @@ target("vgfw")
     add_rules("utils.install.pkgconfig_importfiles")
 
     -- add packages
+    add_packages("fg", { public = true })
     add_packages("glad", { public = true })
     add_packages("glfw", { public = true })
     add_packages("glm", { public = true })
