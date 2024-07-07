@@ -33,7 +33,7 @@ add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode"})
 add_repositories("my-xmake-repo https://github.com/zzxzzk115/xmake-repo.git dev")
 
 -- add requirements
-add_requires("vulkansdk", "vulkan-memory-allocator", "glfw", "glm", "shaderc v2022.2", "spdlog", "stb")
+add_requires("vulkansdk", "vulkan-memory-allocator", "glfw", "glm", "spdlog", "stb")
 
 -- target defination, name: vgfw
 target("vgfw")
@@ -53,7 +53,6 @@ target("vgfw")
     add_packages("vulkan-memory-allocator", { public = true })
     add_packages("glfw", { public = true })
     add_packages("glm", { public = true })
-    add_packages("shaderc", { public = true })
     add_packages("spdlog", { public = true })
     add_packages("stb", { public = true })
 
