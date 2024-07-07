@@ -9,22 +9,15 @@ int main()
     vgfw::GraphicsContext gc {};
     gc.Init(window);
 
-    vgfw::RenderContext rc {};
-
     while (!window->ShouldClose())
     {
-        if (!window->OnTick())
-        {
-            break;
-        }
+        window->OnTick();
 
         glClearColor(0.2, 0.2, 0.2, 1.0);
         glClear(GL_COLOR_BUFFER_BIT);
 
         gc.SwapBuffers();
     }
-
-    gc.Shutdown();
 
     return 0;
 }

@@ -13,6 +13,7 @@
 
 // Currently, we only support Windows, Linux and macOS.
 
+#include <stdexcept>
 #define VGFW_PLATFORM_DARWIN 0
 #define VGFW_PLATFORM_LINUX 0
 #define VGFW_PLATFORM_WINDOWS 0
@@ -120,10 +121,8 @@ namespace vgfw
         /**
          * @brief Called each frame
          *
-         * @return true
-         * @return false
          */
-        virtual bool OnTick() = 0;
+        virtual void OnTick() = 0;
 
         /**
          * @brief Get the width of window
@@ -167,7 +166,7 @@ namespace vgfw
 
         virtual bool Init(const WindowInitInfo& initInfo) override;
 
-        virtual bool OnTick() override;
+        virtual void OnTick() override;
 
         virtual uint32_t GetWidth() const override { return m_Data.Width; }
 
@@ -253,16 +252,7 @@ namespace vgfw
         glfwTerminate();
     }
 
-    bool GLFWWindow::OnTick()
-    {
-        if (m_Window)
-        {
-            glfwPollEvents();
-            return true;
-        }
-
-        return false;
-    }
+    void GLFWWindow::OnTick() { glfwPollEvents(); }
 
     bool GLFWWindow::ShouldClose() const { return m_Window && glfwWindowShouldClose(m_Window); }
 
@@ -315,7 +305,7 @@ namespace vgfw
 
         if (!window || !window->Init(windowInitInfo))
         {
-            return nullptr;
+            throw std::runtime_error("Failed to initialize window!");
         }
 
         return window;
@@ -324,8 +314,9 @@ namespace vgfw
     class GraphicsContext
     {
     public:
+        GraphicsContext() = default;
+
         void Init(const std::shared_ptr<Window>& window);
-        void Shutdown();
 
         void        SwapBuffers();
         static void SetVSync(bool vsyncEnabled);
@@ -368,8 +359,6 @@ namespace vgfw
 
         m_SupportDSA = GLAD_GL_VERSION_4_5 || GLAD_GL_VERSION_4_6;
     }
-
-    void GraphicsContext::Shutdown() {}
 
     void GraphicsContext::SwapBuffers() { m_Window->SwapBuffers(); }
 
