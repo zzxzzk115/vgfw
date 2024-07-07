@@ -65,8 +65,8 @@ int main()
     auto graphicsPipeline = vgfw::renderer::GraphicsPipeline::Builder {}
                                 .SetDepthStencil({
                                     .DepthTest      = false,
-                                    .DepthWrite     = false,
-                                    .DepthCompareOp = vgfw::renderer::CompareOp::LessOrEqual,
+                                    .DepthWrite     = true,
+                                    .DepthCompareOp = vgfw::renderer::CompareOp::Less,
                                 })
                                 .SetRasterizerState({
                                     .PolygonMode = vgfw::renderer::PolygonMode::Fill,

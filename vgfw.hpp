@@ -58,6 +58,7 @@
 #include <array>
 #include <cstdint>
 #include <cstring>
+#include <filesystem>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -88,6 +89,9 @@
 #include <fg/FrameGraph.hpp>
 #include <fg/FrameGraphResource.hpp>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 namespace vgfw
 {
     namespace utils
@@ -95,6 +99,11 @@ namespace vgfw
         template<typename T, typename... Rest>
         void hashCombine(std::size_t& seed, const T& v, const Rest&... rest);
     } // namespace utils
+
+    namespace math
+    {
+        inline constexpr bool isPowerOf2(uint32_t v) { return v && !(v & (v - 1)); }
+    } // namespace math
 
     namespace log
     {
@@ -999,6 +1008,15 @@ namespace vgfw
         GraphicsContext& getGraphicsContext();
         RenderContext&   getRenderContext();
     } // namespace renderer
+
+    namespace io
+    {
+        static std::unordered_map<size_t, renderer::Texture*> g_TextureCache;
+
+        renderer::Texture*
+             load(const std::filesystem::path& texturePath, renderer::RenderContext& rc, bool flip = true);
+        void release(const std::filesystem::path& texturePath, renderer::Texture& texture, renderer::RenderContext& rc);
+    } // namespace io
 
     bool init();
     void shutdown();
@@ -2803,6 +2821,104 @@ namespace vgfw
         GraphicsContext& getGraphicsContext() { return g_GraphicsContext; }
         RenderContext&   getRenderContext() { return *g_RenderContext; }
     } // namespace renderer
+
+    namespace io
+    {
+        renderer::Texture* load(const std::filesystem::path& texturePath, renderer::RenderContext& rc, bool flip)
+        {
+            if (texturePath.empty())
+            {
+                return nullptr;
+            }
+
+            auto       p = std::filesystem::absolute(texturePath);
+            const auto h = std::filesystem::hash_value(p);
+            if (auto it = g_TextureCache.find(h); it != g_TextureCache.cend())
+            {
+                auto extent = it->second->GetExtent();
+                assert(extent.Width > 0 && extent.Height > 0);
+
+                return it->second;
+            }
+
+            stbi_set_flip_vertically_on_load(flip);
+
+            auto* f = stbi__fopen(texturePath.string().c_str(), "rb");
+            assert(f);
+
+            const auto hdr = stbi_is_hdr_from_file(f);
+
+            int32_t width, height, numChannels;
+            auto*   pixels = hdr ? (void*)stbi_loadf_from_file(f, &width, &height, &numChannels, 0) :
+                                   (void*)stbi_load_from_file(f, &width, &height, &numChannels, 0);
+            fclose(f);
+            assert(pixels);
+
+            renderer::ImageData imageData {
+                .DataType = static_cast<GLenum>(hdr ? GL_FLOAT : GL_UNSIGNED_BYTE),
+                .Pixels   = pixels,
+            };
+            renderer::PixelFormat pixelFormat {renderer::PixelFormat::Unknown};
+            switch (numChannels)
+            {
+                case 1:
+                    imageData.Format = GL_RED;
+                    pixelFormat      = renderer::PixelFormat::R8_UNorm;
+                    break;
+                case 3:
+                    imageData.Format = GL_RGB;
+                    pixelFormat      = hdr ? renderer::PixelFormat::RGB16F : renderer::PixelFormat::RGB8_UNorm;
+                    break;
+                case 4:
+                    imageData.Format = GL_RGBA;
+                    pixelFormat      = hdr ? renderer::PixelFormat::RGBA16F : renderer::PixelFormat::RGBA8_UNorm;
+                    break;
+
+                default:
+                    assert(false);
+            }
+
+            uint32_t numMipLevels {1u};
+            if (math::isPowerOf2(width) && math::isPowerOf2(height))
+                numMipLevels = renderer::calcMipLevels(glm::max(width, height));
+
+            auto texture = rc.CreateTexture2D(
+                {static_cast<uint32_t>(width), static_cast<uint32_t>(height)}, pixelFormat, numMipLevels);
+            rc.Upload(texture, 0, {width, height}, imageData)
+                .SetupSampler(texture,
+                              {
+                                  .MinFilter     = renderer::TexelFilter::Linear,
+                                  .MipmapMode    = renderer::MipmapMode::Linear,
+                                  .MagFilter     = renderer::TexelFilter::Linear,
+                                  .MaxAnisotropy = 16.0f,
+                              });
+            stbi_image_free(pixels);
+
+            if (numMipLevels > 1)
+                rc.GenerateMipmaps(texture);
+
+            auto* newTexture  = new renderer::Texture {std::move(texture)};
+            g_TextureCache[h] = newTexture;
+
+            return newTexture;
+        }
+
+        void release(const std::filesystem::path& texturePath, renderer::Texture& texture, renderer::RenderContext& rc)
+        {
+            if (texturePath.empty())
+            {
+                return;
+            }
+
+            auto       p = std::filesystem::absolute(texturePath);
+            const auto h = std::filesystem::hash_value(p);
+            if (auto it = g_TextureCache.find(h); it != g_TextureCache.cend())
+            {
+                rc.Destroy(texture);
+                g_TextureCache.erase(h);
+            }
+        }
+    } // namespace io
 
     bool init()
     {
