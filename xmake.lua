@@ -14,12 +14,16 @@ option_end()
 
 -- if build on windows
 if is_plat("windows") then
+    add_cxxflags("/EHsc")
+    add_cxxflags("/bigobj")
     if is_mode("debug") then
         set_runtimes("MDd")
         add_links("ucrtd")
     else
         set_runtimes("MD")
     end
+else
+    add_cxxflags("-fexceptions")
 end
 
 add_rules("mode.debug", "mode.release")
@@ -30,7 +34,7 @@ add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode"})
 add_repositories("my-xmake-repo https://github.com/zzxzzk115/xmake-repo.git dev")
 
 -- add requirements
-add_requires("vulkansdk", "vulkan-memory-allocator", "glfw", "glm", "shaderc v2022.2", "spdlog", "stb")
+add_requires("glad", "glfw", "glm", "spdlog", "stb")
 
 -- target defination, name: vgfw
 target("vgfw")
@@ -46,11 +50,9 @@ target("vgfw")
     add_rules("utils.install.pkgconfig_importfiles")
 
     -- add packages
-    add_packages("vulkansdk", { public = true })
-    add_packages("vulkan-memory-allocator", { public = true })
+    add_packages("glad", { public = true })
     add_packages("glfw", { public = true })
     add_packages("glm", { public = true })
-    add_packages("shaderc", { public = true })
     add_packages("spdlog", { public = true })
     add_packages("stb", { public = true })
 
