@@ -108,10 +108,12 @@ namespace vgfw
     {
         struct WindowInitInfo
         {
-            uint32_t    Width  = 1024;
-            uint32_t    Height = 768;
-            std::string Title  = "VGFW Window";
-            bool        VSync  = true;
+            uint32_t    Width      = 1024;
+            uint32_t    Height     = 768;
+            std::string Title      = "VGFW Window";
+            bool        VSync      = true;
+            bool        EnableMSAA = false;
+            uint32_t    AASample   = 0;
         };
 
         enum class WindowType
@@ -988,14 +990,14 @@ namespace vgfw
             Buffer&            getBuffer(FrameGraphPassResources& resources, FrameGraphResource id);
         } // namespace framegraph
 
-        static GraphicsContext g_GraphicsContext;
-
+        static GraphicsContext                g_GraphicsContext;
         static std::shared_ptr<RenderContext> g_RenderContext = nullptr;
 
         void init(const std::shared_ptr<window::Window>& window);
         void present();
 
-        RenderContext& context();
+        GraphicsContext& getGraphicsContext();
+        RenderContext&   getRenderContext();
     } // namespace renderer
 
     bool init();
@@ -1096,6 +1098,11 @@ namespace vgfw
             {
                 VGFW_ERROR("Failed to initialize GLFW");
                 return false;
+            }
+
+            if (initInfo.EnableMSAA)
+            {
+                glfwWindowHint(GLFW_SAMPLES, initInfo.AASample);
             }
 
             glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
@@ -2793,7 +2800,8 @@ namespace vgfw
 
         void present() { g_GraphicsContext.SwapBuffers(); }
 
-        RenderContext& context() { return *g_RenderContext; }
+        GraphicsContext& getGraphicsContext() { return g_GraphicsContext; }
+        RenderContext&   getRenderContext() { return *g_RenderContext; }
     } // namespace renderer
 
     bool init()

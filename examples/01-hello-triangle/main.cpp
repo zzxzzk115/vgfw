@@ -38,13 +38,14 @@ int main()
     }
 
     // Create a window instance
-    auto window = vgfw::window::create({.Width = 800, .Height = 600, .Title = "01-hello-triangle"});
+    auto window = vgfw::window::create(
+        {.Width = 800, .Height = 600, .Title = "01-hello-triangle", .EnableMSAA = true, .AASample = 8});
 
     // Init renderer
     vgfw::renderer::init(window);
 
-    // Get render context
-    auto& rc = vgfw::renderer::context();
+    // Get graphics & render context
+    auto& rc = vgfw::renderer::getRenderContext();
 
     // Build vertex format
     auto vertexFormat = vgfw::renderer::VertexFormat::Builder {}
@@ -101,7 +102,7 @@ int main()
         window->OnTick();
 
         // Render
-        rc.BeginRendering({.Extent = {.Width = 800, .Height = 600}}, glm::vec4 {0.0f});
+        rc.BeginRendering({.Extent = {.Width = 800, .Height = 600}}, glm::vec4 {0.2f, 0.3f, 0.3f, 1.0f});
         rc.BindGraphicsPipeline(graphicsPipeline).Draw(vertexBuffer, indexBuffer, 3, 3);
 
         vgfw::renderer::present();
