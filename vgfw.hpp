@@ -438,6 +438,7 @@ namespace vgfw
         vk::PhysicalDevice                GetPhysicalDevice() const { return m_PhysicalDevice; }
         uint32_t                          GetGraphicsQueueFamilyIndex() const { return m_GraphicsQueueFamilyIndex; }
         uint32_t                          GetPresentQueueFamilyIndex() const { return m_PresentQueueFamilyIndex; }
+        vk::Device                        GetDevice() const { return m_Device; }
         vk::SwapchainKHR                  GetSwapchain() const { return m_Swapchain; }
         const std::vector<vk::Image>&     GetSwapchainImages() const { return m_SwapchainImages; }
         const std::vector<vk::ImageView>& GetSwapchainImageViews() const { return m_SwapchainImageViews; }
