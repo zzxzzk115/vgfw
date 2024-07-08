@@ -57,9 +57,9 @@ int main()
     }
 
     // Camera properties
-    glm::vec3 cameraPos(-200, 300, -30);
+    glm::vec3 cameraPos(-1150, 200, -45);
     float     fov   = 60.0f;
-    float     yaw   = -90.0f; // Start facing towards negative Z axis
+    float     yaw   = 90.0f;
     float     pitch = 0.0f;
 
     // Main loop
