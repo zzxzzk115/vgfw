@@ -15,39 +15,39 @@ int main()
     }
 
     // Create a window instance
-    auto window = vgfw::window::create({.Title = "05-deferred", .EnableMSAA = true, .AASample = 8});
+    auto window = vgfw::window::create({.title = "05-deferred", .enableMSAA = true, .aaSample = 8});
 
     // Init renderer
-    vgfw::renderer::init({.Window = window});
+    vgfw::renderer::init({.window = window});
 
     // Get graphics & render context
     auto& rc = vgfw::renderer::getRenderContext();
 
     // Build vertex format
-    auto vertexFormat = vgfw::renderer::VertexFormat::Builder {}.BuildDefault();
+    auto vertexFormat = vgfw::renderer::VertexFormat::Builder {}.buildDefault();
 
     // Get vertex array object
-    auto vao = rc.GetVertexArray(vertexFormat->GetAttributes());
+    auto vao = rc.getVertexArray(vertexFormat->getAttributes());
 
     // Create shader program
-    auto program = rc.CreateGraphicsProgram(vgfw::utils::readFileAllText("shaders/default.vert"),
+    auto program = rc.createGraphicsProgram(vgfw::utils::readFileAllText("shaders/default.vert"),
                                             vgfw::utils::readFileAllText("shaders/default.frag"));
 
     // Build a graphics pipeline
     auto graphicsPipeline = vgfw::renderer::GraphicsPipeline::Builder {}
-                                .SetDepthStencil({
-                                    .DepthTest      = true,
-                                    .DepthWrite     = true,
-                                    .DepthCompareOp = vgfw::renderer::CompareOp::Less,
+                                .setDepthStencil({
+                                    .depthTest      = true,
+                                    .depthWrite     = true,
+                                    .depthCompareOp = vgfw::renderer::CompareOp::Less,
                                 })
-                                .SetRasterizerState({
-                                    .PolygonMode = vgfw::renderer::PolygonMode::Fill,
-                                    .CullMode    = vgfw::renderer::CullMode::Back,
-                                    .ScissorTest = false,
+                                .setRasterizerState({
+                                    .polygonMode = vgfw::renderer::PolygonMode::Fill,
+                                    .cullMode    = vgfw::renderer::CullMode::Back,
+                                    .scissorTest = false,
                                 })
-                                .SetVAO(vao)
-                                .SetShaderProgram(program)
-                                .Build();
+                                .setVAO(vao)
+                                .setShaderProgram(program)
+                                .build();
 
     // Load model
     vgfw::resource::Model sponza {};
@@ -63,34 +63,34 @@ int main()
     float     pitch = 0.0f;
 
     // Main loop
-    while (!window->ShouldClose())
+    while (!window->shouldClose())
     {
-        window->OnTick();
+        window->onTick();
 
         // Create the view matrix
         glm::mat4 view = glm::lookAt(cameraPos, cameraPos + getFrontVector(yaw, pitch), glm::vec3(0.0f, 1.0f, 0.0f));
 
         // Create the projection matrix
         glm::mat4 projection =
-            glm::perspective(glm::radians(fov), window->GetWidth() * 1.0f / window->GetHeight(), 1.0f, 10000.0f);
+            glm::perspective(glm::radians(fov), window->getWidth() * 1.0f / window->getHeight(), 1.0f, 10000.0f);
 
         // Render
-        rc.BeginRendering({.Extent = {.Width = window->GetWidth(), .Height = window->GetHeight()}},
+        rc.beginRendering({.extent = {.width = window->getWidth(), .height = window->getHeight()}},
                           glm::vec4 {0.2f, 0.3f, 0.3f, 1.0f},
                           1.0f);
 
-        for (const auto& meshPrimitive : sponza.Meshes)
+        for (const auto& meshPrimitive : sponza.meshPrimitives)
         {
-            rc.BindGraphicsPipeline(graphicsPipeline)
-                .SetUniformMat4("view", view)
-                .SetUniformMat4("projection", projection)
-                .SetUniformVec3("viewPos", cameraPos)
-                .BindTexture(0,
-                             *sponza.TextureMap[sponza.MaterialMap[meshPrimitive.MaterialIndex].BaseColorTextureIndex])
-                .Draw(*meshPrimitive.VertexBuf,
-                      *meshPrimitive.IndexBuf,
-                      meshPrimitive.Indices.size(),
-                      meshPrimitive.Vertices.size());
+            rc.bindGraphicsPipeline(graphicsPipeline)
+                .setUniformMat4("view", view)
+                .setUniformMat4("projection", projection)
+                .setUniformVec3("viewPos", cameraPos)
+                .bindTexture(0,
+                             *sponza.textureMap[sponza.materialMap[meshPrimitive.materialIndex].baseColorTextureIndex])
+                .draw(*meshPrimitive.vertexBuffer,
+                      *meshPrimitive.indexBuffer,
+                      meshPrimitive.indices.size(),
+                      meshPrimitive.vertices.size());
         }
 
         vgfw::renderer::beginImGui();

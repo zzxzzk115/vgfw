@@ -38,43 +38,43 @@ int main()
     }
 
     // Create a window instance
-    auto window = vgfw::window::create({.Title = "01-hello-triangle", .EnableMSAA = true, .AASample = 8});
+    auto window = vgfw::window::create({.title = "01-hello-triangle", .enableMSAA = true, .aaSample = 8});
 
     // Init renderer
-    vgfw::renderer::init({.Window = window});
+    vgfw::renderer::init({.window = window});
 
     // Get graphics & render context
     auto& rc = vgfw::renderer::getRenderContext();
 
     // Build vertex format
     auto vertexFormat = vgfw::renderer::VertexFormat::Builder {}
-                            .SetAttribute(vgfw::renderer::AttributeLocation::Position,
-                                          {.VertType = vgfw::renderer::VertexAttribute::Type::Float3, .Offset = 0})
-                            .SetAttribute(vgfw::renderer::AttributeLocation::Normal_Color,
-                                          {.VertType = vgfw::renderer::VertexAttribute::Type::Float3, .Offset = 12})
-                            .Build();
+                            .setAttribute(vgfw::renderer::AttributeLocation::Position,
+                                          {.vertType = vgfw::renderer::VertexAttribute::Type::Float3, .offset = 0})
+                            .setAttribute(vgfw::renderer::AttributeLocation::Normal_Color,
+                                          {.vertType = vgfw::renderer::VertexAttribute::Type::Float3, .offset = 12})
+                            .build();
 
     // Get vertex array object
-    auto vao = rc.GetVertexArray(vertexFormat->GetAttributes());
+    auto vao = rc.getVertexArray(vertexFormat->getAttributes());
 
     // Create shader program
-    auto program = rc.CreateGraphicsProgram(vertexShaderSource, fragmentShaderSource);
+    auto program = rc.createGraphicsProgram(vertexShaderSource, fragmentShaderSource);
 
     // Build a graphics pipeline
     auto graphicsPipeline = vgfw::renderer::GraphicsPipeline::Builder {}
-                                .SetDepthStencil({
-                                    .DepthTest      = false,
-                                    .DepthWrite     = true,
-                                    .DepthCompareOp = vgfw::renderer::CompareOp::Less,
+                                .setDepthStencil({
+                                    .depthTest      = false,
+                                    .depthWrite     = true,
+                                    .depthCompareOp = vgfw::renderer::CompareOp::Less,
                                 })
-                                .SetRasterizerState({
-                                    .PolygonMode = vgfw::renderer::PolygonMode::Fill,
-                                    .CullMode    = vgfw::renderer::CullMode::Back,
-                                    .ScissorTest = false,
+                                .setRasterizerState({
+                                    .polygonMode = vgfw::renderer::PolygonMode::Fill,
+                                    .cullMode    = vgfw::renderer::CullMode::Back,
+                                    .scissorTest = false,
                                 })
-                                .SetVAO(vao)
-                                .SetShaderProgram(program)
-                                .Build();
+                                .setVAO(vao)
+                                .setShaderProgram(program)
+                                .build();
 
     // clang-format off
     // Vertices
@@ -92,17 +92,18 @@ int main()
     // clang-format on
 
     // Create index buffer & vertex buffer
-    auto indexBuffer  = rc.CreateIndexBuffer(vgfw::renderer::IndexType::UInt32, 3, indices);
-    auto vertexBuffer = rc.CreateVertexBuffer(vertexFormat->GetStride(), 3, vertices);
+    auto indexBuffer  = rc.createIndexBuffer(vgfw::renderer::IndexType::UInt32, 3, indices);
+    auto vertexBuffer = rc.createVertexBuffer(vertexFormat->getStride(), 3, vertices);
 
     // Main loop
-    while (!window->ShouldClose())
+    while (!window->shouldClose())
     {
-        window->OnTick();
+        window->onTick();
 
         // Render
-        rc.BeginRendering({.Extent = {.Width = window->GetWidth(), .Height = window->GetHeight()}}, glm::vec4 {0.2f, 0.3f, 0.3f, 1.0f});
-        rc.BindGraphicsPipeline(graphicsPipeline).Draw(vertexBuffer, indexBuffer, 3, 3);
+        rc.beginRendering({.extent = {.width = window->getWidth(), .height = window->getHeight()}},
+                          glm::vec4 {0.2f, 0.3f, 0.3f, 1.0f});
+        rc.bindGraphicsPipeline(graphicsPipeline).draw(vertexBuffer, indexBuffer, 3, 3);
 
         vgfw::renderer::beginImGui();
         ImGui::Begin("Triangle");
@@ -114,8 +115,8 @@ int main()
     }
 
     // Cleanup
-    rc.Destroy(indexBuffer);
-    rc.Destroy(vertexBuffer);
+    rc.destroy(indexBuffer);
+    rc.destroy(vertexBuffer);
     vgfw::shutdown();
 
     return 0;

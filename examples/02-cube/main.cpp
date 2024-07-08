@@ -46,43 +46,43 @@ int main()
     }
 
     // Create a window instance
-    auto window = vgfw::window::create({.Title = "02-cube", .EnableMSAA = true, .AASample = 8});
+    auto window = vgfw::window::create({.title = "02-cube", .enableMSAA = true, .aaSample = 8});
 
     // Init renderer
-    vgfw::renderer::init({.Window = window});
+    vgfw::renderer::init({.window = window});
 
     // Get graphics & render context
     auto& rc = vgfw::renderer::getRenderContext();
 
     // Build vertex format
     auto vertexFormat = vgfw::renderer::VertexFormat::Builder {}
-                            .SetAttribute(vgfw::renderer::AttributeLocation::Position,
-                                          {.VertType = vgfw::renderer::VertexAttribute::Type::Float3, .Offset = 0})
-                            .SetAttribute(vgfw::renderer::AttributeLocation::TexCoords,
-                                          {.VertType = vgfw::renderer::VertexAttribute::Type::Float2, .Offset = 12})
-                            .Build();
+                            .setAttribute(vgfw::renderer::AttributeLocation::Position,
+                                          {.vertType = vgfw::renderer::VertexAttribute::Type::Float3, .offset = 0})
+                            .setAttribute(vgfw::renderer::AttributeLocation::TexCoords,
+                                          {.vertType = vgfw::renderer::VertexAttribute::Type::Float2, .offset = 12})
+                            .build();
 
     // Get vertex array object
-    auto vao = rc.GetVertexArray(vertexFormat->GetAttributes());
+    auto vao = rc.getVertexArray(vertexFormat->getAttributes());
 
     // Create shader program
-    auto program = rc.CreateGraphicsProgram(vertexShaderSource, fragmentShaderSource);
+    auto program = rc.createGraphicsProgram(vertexShaderSource, fragmentShaderSource);
 
     // Build a graphics pipeline
     auto graphicsPipeline = vgfw::renderer::GraphicsPipeline::Builder {}
-                                .SetDepthStencil({
-                                    .DepthTest      = true,
-                                    .DepthWrite     = true,
-                                    .DepthCompareOp = vgfw::renderer::CompareOp::Less,
+                                .setDepthStencil({
+                                    .depthTest      = true,
+                                    .depthWrite     = true,
+                                    .depthCompareOp = vgfw::renderer::CompareOp::Less,
                                 })
-                                .SetRasterizerState({
-                                    .PolygonMode = vgfw::renderer::PolygonMode::Fill,
-                                    .CullMode    = vgfw::renderer::CullMode::Back,
-                                    .ScissorTest = false,
+                                .setRasterizerState({
+                                    .polygonMode = vgfw::renderer::PolygonMode::Fill,
+                                    .cullMode    = vgfw::renderer::CullMode::Back,
+                                    .scissorTest = false,
                                 })
-                                .SetVAO(vao)
-                                .SetShaderProgram(program)
-                                .Build();
+                                .setVAO(vao)
+                                .setShaderProgram(program)
+                                .build();
 
     // clang-format off
     float vertices[] = {
@@ -131,7 +131,7 @@ int main()
     // clang-format on
 
     // Create index buffer & vertex buffer
-    auto vertexBuffer = rc.CreateVertexBuffer(vertexFormat->GetStride(), 36, vertices);
+    auto vertexBuffer = rc.createVertexBuffer(vertexFormat->getStride(), 36, vertices);
 
     // Load texture
     auto* texture = vgfw::io::load("assets/textures/awesomeface.png", rc);
@@ -142,9 +142,9 @@ int main()
     float fov = 60.0f;
 
     // Main loop
-    while (!window->ShouldClose())
+    while (!window->shouldClose())
     {
-        window->OnTick();
+        window->onTick();
 
         // Calculate the elapsed time
         auto  currentTime = std::chrono::high_resolution_clock::now();
@@ -158,16 +158,18 @@ int main()
 
         // Create the projection matrix
         glm::mat4 projection =
-            glm::perspective(glm::radians(fov), window->GetWidth() * 1.0f / window->GetHeight(), 0.1f, 100.0f);
+            glm::perspective(glm::radians(fov), window->getWidth() * 1.0f / window->getHeight(), 0.1f, 100.0f);
 
         // Render
-        rc.BeginRendering({.Extent = {.Width = window->GetWidth(), .Height = window->GetHeight()}}, glm::vec4 {0.2f, 0.3f, 0.3f, 1.0f}, 1.0f);
-        rc.BindGraphicsPipeline(graphicsPipeline)
-            .SetUniformMat4("model", model)
-            .SetUniformMat4("view", view)
-            .SetUniformMat4("projection", projection)
-            .BindTexture(0, *texture)
-            .Draw(vertexBuffer, {}, 0, 36);
+        rc.beginRendering({.extent = {.width = window->getWidth(), .height = window->getHeight()}},
+                          glm::vec4 {0.2f, 0.3f, 0.3f, 1.0f},
+                          1.0f);
+        rc.bindGraphicsPipeline(graphicsPipeline)
+            .setUniformMat4("model", model)
+            .setUniformMat4("view", view)
+            .setUniformMat4("projection", projection)
+            .bindTexture(0, *texture)
+            .draw(vertexBuffer, {}, 0, 36);
 
         vgfw::renderer::beginImGui();
         ImGui::Begin("Cube");
@@ -179,7 +181,7 @@ int main()
     }
 
     // Cleanup
-    rc.Destroy(vertexBuffer);
+    rc.destroy(vertexBuffer);
     vgfw::shutdown();
 
     return 0;

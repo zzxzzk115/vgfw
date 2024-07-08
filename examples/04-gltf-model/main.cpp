@@ -133,38 +133,38 @@ int main()
     }
 
     // Create a window instance
-    auto window = vgfw::window::create({.Title = "04-gltf-model", .EnableMSAA = true, .AASample = 8});
+    auto window = vgfw::window::create({.title = "04-gltf-model", .enableMSAA = true, .aaSample = 8});
 
     // Init renderer
-    vgfw::renderer::init({.Window = window});
+    vgfw::renderer::init({.window = window});
 
     // Get graphics & render context
     auto& rc = vgfw::renderer::getRenderContext();
 
     // Build vertex format
-    auto vertexFormat = vgfw::renderer::VertexFormat::Builder {}.BuildDefault();
+    auto vertexFormat = vgfw::renderer::VertexFormat::Builder {}.buildDefault();
 
     // Get vertex array object
-    auto vao = rc.GetVertexArray(vertexFormat->GetAttributes());
+    auto vao = rc.getVertexArray(vertexFormat->getAttributes());
 
     // Create shader program
-    auto program = rc.CreateGraphicsProgram(vertexShaderSource, fragmentShaderSource);
+    auto program = rc.createGraphicsProgram(vertexShaderSource, fragmentShaderSource);
 
     // Build a graphics pipeline
     auto graphicsPipeline = vgfw::renderer::GraphicsPipeline::Builder {}
-                                .SetDepthStencil({
-                                    .DepthTest      = true,
-                                    .DepthWrite     = true,
-                                    .DepthCompareOp = vgfw::renderer::CompareOp::Less,
+                                .setDepthStencil({
+                                    .depthTest      = true,
+                                    .depthWrite     = true,
+                                    .depthCompareOp = vgfw::renderer::CompareOp::Less,
                                 })
-                                .SetRasterizerState({
-                                    .PolygonMode = vgfw::renderer::PolygonMode::Fill,
-                                    .CullMode    = vgfw::renderer::CullMode::Back,
-                                    .ScissorTest = false,
+                                .setRasterizerState({
+                                    .polygonMode = vgfw::renderer::PolygonMode::Fill,
+                                    .cullMode    = vgfw::renderer::CullMode::Back,
+                                    .scissorTest = false,
                                 })
-                                .SetVAO(vao)
-                                .SetShaderProgram(program)
-                                .Build();
+                                .setVAO(vao)
+                                .setShaderProgram(program)
+                                .build();
 
     // Load model
     vgfw::resource::Model suzanneModel {};
@@ -175,16 +175,19 @@ int main()
 
     // Get textures
     auto* baseColorTexture =
-        suzanneModel.TextureMap[suzanneModel.MaterialMap[suzanneModel.Meshes[0].MaterialIndex].BaseColorTextureIndex];
+        suzanneModel
+            .textureMap[suzanneModel.materialMap[suzanneModel.meshPrimitives[0].materialIndex].baseColorTextureIndex];
     auto* metallicRoughnessTexture =
-        suzanneModel.TextureMap[suzanneModel.MaterialMap[suzanneModel.Meshes[0].MaterialIndex].BaseColorTextureIndex];
+        suzanneModel
+            .textureMap[suzanneModel.materialMap[suzanneModel.meshPrimitives[0].materialIndex].baseColorTextureIndex];
 
     // Create index buffer & vertex buffer
-    auto indexBuffer  = rc.CreateIndexBuffer(vgfw::renderer::IndexType::UInt32,
-                                            suzanneModel.Meshes[0].Indices.size(),
-                                            suzanneModel.Meshes[0].Indices.data());
-    auto vertexBuffer = rc.CreateVertexBuffer(
-        vertexFormat->GetStride(), suzanneModel.Meshes[0].Vertices.size(), suzanneModel.Meshes[0].Vertices.data());
+    auto indexBuffer  = rc.createIndexBuffer(vgfw::renderer::IndexType::UInt32,
+                                            suzanneModel.meshPrimitives[0].indices.size(),
+                                            suzanneModel.meshPrimitives[0].indices.data());
+    auto vertexBuffer = rc.createVertexBuffer(vertexFormat->getStride(),
+                                              suzanneModel.meshPrimitives[0].vertices.size(),
+                                              suzanneModel.meshPrimitives[0].vertices.data());
 
     // Start time
     auto startTime = std::chrono::high_resolution_clock::now();
@@ -199,9 +202,9 @@ int main()
     glm::vec3 objectColor(1.0f, 1.0f, 1.0f);
 
     // Main loop
-    while (!window->ShouldClose())
+    while (!window->shouldClose())
     {
-        window->OnTick();
+        window->onTick();
 
         // Calculate the elapsed time
         auto  currentTime = std::chrono::high_resolution_clock::now();
@@ -215,26 +218,26 @@ int main()
 
         // Create the projection matrix
         glm::mat4 projection =
-            glm::perspective(glm::radians(fov), window->GetWidth() * 1.0f / window->GetHeight(), 0.1f, 100.0f);
+            glm::perspective(glm::radians(fov), window->getWidth() * 1.0f / window->getHeight(), 0.1f, 100.0f);
 
         // Render
-        rc.BeginRendering({.Extent = {.Width = window->GetWidth(), .Height = window->GetHeight()}},
+        rc.beginRendering({.extent = {.width = window->getWidth(), .height = window->getHeight()}},
                           glm::vec4 {0.2f, 0.3f, 0.3f, 1.0f},
                           1.0f);
-        rc.BindGraphicsPipeline(graphicsPipeline)
-            .SetUniformMat4("model", model)
-            .SetUniformMat4("view", view)
-            .SetUniformMat4("projection", projection)
-            .SetUniformVec3("lightPos", lightPos)
-            .SetUniformVec3("viewPos", viewPos)
-            .SetUniformVec3("lightColor", lightColor)
-            .SetUniformVec3("objectColor", objectColor)
-            .BindTexture(0, *baseColorTexture)
-            .BindTexture(1, *metallicRoughnessTexture)
-            .Draw(vertexBuffer,
+        rc.bindGraphicsPipeline(graphicsPipeline)
+            .setUniformMat4("model", model)
+            .setUniformMat4("view", view)
+            .setUniformMat4("projection", projection)
+            .setUniformVec3("lightPos", lightPos)
+            .setUniformVec3("viewPos", viewPos)
+            .setUniformVec3("lightColor", lightColor)
+            .setUniformVec3("objectColor", objectColor)
+            .bindTexture(0, *baseColorTexture)
+            .bindTexture(1, *metallicRoughnessTexture)
+            .draw(vertexBuffer,
                   indexBuffer,
-                  suzanneModel.Meshes[0].Indices.size(),
-                  suzanneModel.Meshes[0].Vertices.size());
+                  suzanneModel.meshPrimitives[0].indices.size(),
+                  suzanneModel.meshPrimitives[0].vertices.size());
 
         vgfw::renderer::beginImGui();
         ImGui::Begin("GLTF Model");
@@ -250,8 +253,8 @@ int main()
     }
 
     // Cleanup
-    rc.Destroy(indexBuffer);
-    rc.Destroy(vertexBuffer);
+    rc.destroy(indexBuffer);
+    rc.destroy(vertexBuffer);
     vgfw::shutdown();
 
     return 0;

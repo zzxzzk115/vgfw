@@ -34,7 +34,6 @@ Checks: >
   performance-no-automatic-move,
   performance-trivially-destructible,
   performance-unnecessary-copy-initialization,
-
   readability-avoid-const-params-in-decls,
   readability-const-return-type,
   readability-container-size-empty,
@@ -58,7 +57,6 @@ Checks: >
   readability-simplify-boolean-expr,
   readability-inconsistent-declaration-parameter-name,
   readability-identifier-naming,
-
   bugprone-undelegated-constructor,
   bugprone-argument-comment,
   bugprone-bad-signal-to-kill-thread,
@@ -102,7 +100,6 @@ Checks: >
   bugprone-unused-return-value,
   bugprone-use-after-move,
   bugprone-virtual-near-miss,
-
   cert-dcl21-cpp,
   cert-dcl50-cpp,
   cert-env33-c,
@@ -112,7 +109,6 @@ Checks: >
   cert-mem57-cpp,
   cert-msc50-cpp,
   cert-oop58-cpp,
-
   google-build-explicit-make-pair,
   google-build-namespaces,
   google-default-arguments,
@@ -121,9 +117,7 @@ Checks: >
   google-readability-avoid-underscore-in-googletest-name,
   google-runtime-int,
   google-runtime-operator,
-
   hicpp-exception-baseclass,
-
   clang-analyzer-core.CallAndMessage,
   clang-analyzer-core.DivideZero,
   clang-analyzer-core.NonNullParamChecker,
@@ -159,7 +153,6 @@ Checks: >
   clang-analyzer-unix.Vfork,
   clang-analyzer-unix.cstring.BadSizeArg,
   clang-analyzer-unix.cstring.NullArg,
-
   boost-use-to-string
 
 WarningsAsErrors: '*'
@@ -172,9 +165,9 @@ CheckOptions:
   - key: readability-identifier-naming.LocalVariableCase
     value: camelBack
   - key: readability-identifier-naming.StaticConstantCase
-    value: aNy_CasE
-  - key: readability-identifier-naming.MemberCase
     value: CamelCase
+  - key: readability-identifier-naming.MemberCase
+    value: camelBack
   - key: readability-identifier-naming.ClassMemberPrefix
     value: s_
   - key: readability-identifier-naming.PrivateMemberPrefix
@@ -182,11 +175,15 @@ CheckOptions:
   - key: readability-identifier-naming.ProtectedMemberPrefix
     value: m_
   - key: readability-identifier-naming.PublicMemberCase
-    value: CamelCase
+    value: camelBack
   - key: readability-identifier-naming.PrivateMemberCase
     value: CamelCase
   - key: readability-identifier-naming.MethodCase
-    value: CamelCase
+    value: camelBack
+  - key: readability-identifier-naming.PrivateMethodCase
+    value: camelBack
+  - key: readability-identifier-naming.ProtectedMethodCase
+    value: camelBack
   - key: readability-identifier-naming.PrivateMethodPrefix
     value: ''
   - key: readability-identifier-naming.ProtectedMethodPrefix
@@ -197,6 +194,8 @@ CheckOptions:
     value: camelBack
   - key: readability-identifier-naming.StructCase
     value: CamelCase
+  - key: readability-identifier-naming.StructMemberCase
+    value: camelBack
   - key: readability-identifier-naming.TemplateTemplateParameterCase
     value: CamelCase
   - key: readability-identifier-naming.TemplateUsingCase

@@ -135,12 +135,12 @@ namespace vgfw
     {
         struct WindowInitInfo
         {
-            uint32_t    Width      = 1024;
-            uint32_t    Height     = 768;
-            std::string Title      = "VGFW Window";
-            bool        VSync      = true;
-            bool        EnableMSAA = false;
-            uint32_t    AASample   = 0;
+            uint32_t    width      = 1024;
+            uint32_t    height     = 768;
+            std::string title      = "VGFW Window";
+            bool        vSync      = true;
+            bool        enableMSAA = false;
+            uint32_t    aaSample   = 0;
         };
 
         enum class WindowType
@@ -158,45 +158,45 @@ namespace vgfw
              *
              * @return WindowType
              */
-            virtual WindowType GetType() = 0;
+            virtual WindowType getType() = 0;
 
             /**
              * @brief Initialize the window
              *
              * @param windowInitInfo
              */
-            virtual bool Init(const WindowInitInfo& windowInitInfo) = 0;
+            virtual bool init(const WindowInitInfo& windowInitInfo) = 0;
 
             /**
              * @brief Called each frame
              *
              */
-            virtual void OnTick() = 0;
+            virtual void onTick() = 0;
 
             /**
              * @brief Get the width of window
              *
              * @return uint32_t
              */
-            virtual uint32_t GetWidth() const = 0;
+            virtual uint32_t getWidth() const = 0;
 
             /**
              * @brief Get the height of window
              *
              * @return uint32_t
              */
-            virtual uint32_t GetHeight() const = 0;
+            virtual uint32_t getHeight() const = 0;
 
-            virtual bool ShouldClose() const = 0;
-            virtual bool IsMinimized() const = 0;
+            virtual bool shouldClose() const = 0;
+            virtual bool isMinimized() const = 0;
 
-            virtual void MakeCurrentContext() = 0;
-            virtual void SwapBuffers()        = 0;
+            virtual void makeCurrentContext() = 0;
+            virtual void swapBuffers()        = 0;
 
-            virtual void SetHideCursor(bool hide) = 0;
+            virtual void setHideCursor(bool hide) = 0;
 
-            virtual void* GetPlatformWindow() const = 0;
-            virtual void* GetNativeWindow() const   = 0;
+            virtual void* getPlatformWindow() const = 0;
+            virtual void* getNativeWindow() const   = 0;
 
         protected:
             friend class renderer::GraphicsContext;
@@ -205,33 +205,33 @@ namespace vgfw
              * @brief Cleanup resources and shutdown the window.
              *
              */
-            virtual void Shutdown() = 0;
+            virtual void shutdown() = 0;
         };
 
         class GLFWWindow final : public Window
         {
         public:
-            virtual WindowType GetType() override { return WindowType::GLFW; }
+            virtual WindowType getType() override { return WindowType::GLFW; }
 
-            virtual bool Init(const WindowInitInfo& initInfo) override;
+            virtual bool init(const WindowInitInfo& initInfo) override;
 
-            virtual void OnTick() override;
+            virtual void onTick() override;
 
-            virtual uint32_t GetWidth() const override { return m_Data.Width; }
+            virtual uint32_t getWidth() const override { return m_Data.width; }
 
-            virtual uint32_t GetHeight() const override { return m_Data.Height; }
+            virtual uint32_t getHeight() const override { return m_Data.height; }
 
-            virtual bool ShouldClose() const override;
-            virtual bool IsMinimized() const override;
+            virtual bool shouldClose() const override;
+            virtual bool isMinimized() const override;
 
-            virtual void MakeCurrentContext() override;
-            virtual void SwapBuffers() override;
+            virtual void makeCurrentContext() override;
+            virtual void swapBuffers() override;
 
-            virtual void SetHideCursor(bool hide) override;
+            virtual void setHideCursor(bool hide) override;
 
-            virtual void* GetPlatformWindow() const override { return m_Window; }
+            virtual void* getPlatformWindow() const override { return m_Window; }
 
-            virtual void* GetNativeWindow() const override
+            virtual void* getNativeWindow() const override
             {
 #if VGFW_PLATFORM_LINUX
                 return (void*)(uintptr_t)glfwGetX11Window(m_Window);
@@ -243,17 +243,17 @@ namespace vgfw
             }
 
         protected:
-            virtual void Shutdown() override;
+            virtual void shutdown() override;
 
         private:
             GLFWwindow* m_Window {nullptr};
 
             struct WindowData
             {
-                std::string  Title;
-                unsigned int Width {0}, Height {0};
-                GLFWWindow*  WindowSys {nullptr};
-                bool         IsMinimized {false};
+                std::string  title;
+                unsigned int width {0}, height {0};
+                GLFWWindow*  windowSys {nullptr};
+                bool         isMinimized {false};
             };
 
             WindowData m_Data;
@@ -269,20 +269,20 @@ namespace vgfw
         public:
             GraphicsContext() = default;
 
-            void Init(const std::shared_ptr<window::Window>& window);
-            void Shutdown();
+            void init(const std::shared_ptr<window::Window>& window);
+            void shutdown();
 
-            void        SwapBuffers();
-            static void SetVSync(bool vsyncEnabled);
+            void        swapBuffers();
+            static void setVSync(bool vsyncEnabled);
 
-            bool IsSupportDSA() const { return m_SupportDSA; }
+            bool isSupportDsa() const { return m_SupportDSA; }
 
-            inline std::shared_ptr<window::Window> GetWindow() const { return m_Window; }
+            inline std::shared_ptr<window::Window> getWindow() const { return m_Window; }
 
         private:
-            static int LoadGL();
-            static int GetMinMajor();
-            static int GetMinMinor();
+            static int loadGl();
+            static int getMinMajor();
+            static int getMinMinor();
 
         protected:
             bool                            m_SupportDSA {false};
@@ -304,8 +304,8 @@ namespace vgfw
 
             explicit operator bool() const;
 
-            GLsizeiptr GetSize() const;
-            bool       IsMapped() const;
+            GLsizeiptr getSize() const;
+            bool       isMapped() const;
 
         protected:
             Buffer(GLuint id, GLsizeiptr size);
@@ -333,8 +333,8 @@ namespace vgfw
         public:
             IndexBuffer() = default;
 
-            IndexType  GetIndexType() const;
-            GLsizeiptr GetCapacity() const;
+            IndexType  getIndexType() const;
+            GLsizeiptr getCapacity() const;
 
         private:
             IndexBuffer(Buffer, IndexType);
@@ -350,8 +350,8 @@ namespace vgfw
         public:
             VertexBuffer() = default;
 
-            GLsizei    GetStride() const;
-            GLsizeiptr GetCapacity() const;
+            GLsizei    getStride() const;
+            GLsizeiptr getCapacity() const;
 
         private:
             VertexBuffer(Buffer, GLsizei stride);
@@ -374,8 +374,8 @@ namespace vgfw
 
                 UByte4_Norm,
             };
-            Type    VertType;
-            int32_t Offset;
+            Type    vertType;
+            int32_t offset;
         };
 
         using VertexAttributes = std::map<int32_t, VertexAttribute>;
@@ -400,13 +400,13 @@ namespace vgfw
             VertexFormat& operator=(const VertexFormat&)     = delete;
             VertexFormat& operator=(VertexFormat&&) noexcept = delete;
 
-            std::size_t GetHash() const;
+            std::size_t getHash() const;
 
-            const VertexAttributes& GetAttributes() const;
-            bool                    Contains(AttributeLocation) const;
-            bool                    Contains(std::initializer_list<AttributeLocation>) const;
+            const VertexAttributes& getAttributes() const;
+            bool                    contains(AttributeLocation) const;
+            bool                    contains(std::initializer_list<AttributeLocation>) const;
 
-            uint32_t GetStride() const;
+            uint32_t getStride() const;
 
             class Builder final
             {
@@ -419,10 +419,10 @@ namespace vgfw
                 Builder& operator=(const Builder&)     = delete;
                 Builder& operator=(Builder&&) noexcept = delete;
 
-                Builder& SetAttribute(AttributeLocation, const VertexAttribute&);
+                Builder& setAttribute(AttributeLocation, const VertexAttribute&);
 
-                std::shared_ptr<VertexFormat> Build();
-                std::shared_ptr<VertexFormat> BuildDefault();
+                std::shared_ptr<VertexFormat> build();
+                std::shared_ptr<VertexFormat> buildDefault();
 
             private:
                 VertexAttributes m_Attributes;
@@ -447,22 +447,22 @@ namespace vgfw
         // clang-format off
         struct Offset2D
         {
-            int32_t X {0}, Y {0};
+            int32_t x {0}, y {0};
 
             auto operator<=> (const Offset2D&) const = default;
         };
 
         struct Extent2D
         {
-            uint32_t Width {0}, Height {0};
+            uint32_t width {0}, height {0};
 
             auto operator<=> (const Extent2D&) const = default;
         };
 
         struct Rect2D
         {
-            Offset2D Offset;
-            Extent2D Extent;
+            Offset2D offset;
+            Extent2D extent;
 
             auto operator<=> (const Rect2D&) const = default;
         };
@@ -532,13 +532,13 @@ namespace vgfw
 
             explicit operator bool() const;
 
-            GLenum GetType() const;
+            GLenum getType() const;
 
-            Extent2D    GetExtent() const;
-            uint32_t    GetDepth() const;
-            uint32_t    GetNumMipLevels() const;
-            uint32_t    GetNumLayers() const;
-            PixelFormat GetPixelFormat() const;
+            Extent2D    getExtent() const;
+            uint32_t    getDepth() const;
+            uint32_t    getNumMipLevels() const;
+            uint32_t    getNumLayers() const;
+            PixelFormat getPixelFormat() const;
 
         private:
             Texture(GLuint id,
@@ -588,18 +588,18 @@ namespace vgfw
 
         struct SamplerInfo
         {
-            TexelFilter MinFilter {TexelFilter::Nearest};
-            MipmapMode  MipmapMode {MipmapMode::Linear};
-            TexelFilter MagFilter {TexelFilter::Linear};
+            TexelFilter minFilter {TexelFilter::Nearest};
+            MipmapMode  mipmapMode {MipmapMode::Linear};
+            TexelFilter magFilter {TexelFilter::Linear};
 
-            SamplerAddressMode AddressModeS {SamplerAddressMode::Repeat};
-            SamplerAddressMode AddressModeT {SamplerAddressMode::Repeat};
-            SamplerAddressMode AddressModeR {SamplerAddressMode::Repeat};
+            SamplerAddressMode addressModeS {SamplerAddressMode::Repeat};
+            SamplerAddressMode addressModeT {SamplerAddressMode::Repeat};
+            SamplerAddressMode addressModeR {SamplerAddressMode::Repeat};
 
-            float MaxAnisotropy {1.0f};
+            float maxAnisotropy {1.0f};
 
-            std::optional<CompareOp> CompareOperator {};
-            glm::vec4                BorderColor {0.0f};
+            std::optional<CompareOp> compareOperator {};
+            glm::vec4                borderColor {0.0f};
         };
 
         uint32_t    calcMipLevels(uint32_t size);
@@ -608,9 +608,9 @@ namespace vgfw
 
         struct DepthStencilState
         {
-            bool      DepthTest {false};
-            bool      DepthWrite {true};
-            CompareOp DepthCompareOp {CompareOp::Less};
+            bool      depthTest {false};
+            bool      depthWrite {true};
+            CompareOp depthCompareOp {CompareOp::Less};
 
             // clang-format off
             auto operator<=> (const DepthStencilState&) const = default;
@@ -652,15 +652,15 @@ namespace vgfw
         // dest = values that are already in a framebuffer
         struct BlendState
         {
-            bool Enabled {false};
+            bool enabled {false};
 
-            BlendFactor SrcColor {BlendFactor::One};
-            BlendFactor DestColor {BlendFactor::Zero};
-            BlendOp     ColorOp {BlendOp::Add};
+            BlendFactor srcColor {BlendFactor::One};
+            BlendFactor destColor {BlendFactor::Zero};
+            BlendOp     colorOp {BlendOp::Add};
 
-            BlendFactor SrcAlpha {BlendFactor::One};
-            BlendFactor DestAlpha {BlendFactor::Zero};
-            BlendOp     AlphaOp {BlendOp::Add};
+            BlendFactor srcAlpha {BlendFactor::One};
+            BlendFactor destAlpha {BlendFactor::Zero};
+            BlendOp     alphaOp {BlendOp::Add};
 
             // clang-format off
             auto operator<=> (const BlendState&) const = default;
@@ -682,7 +682,7 @@ namespace vgfw
         };
         struct PolygonOffset
         {
-            float Factor {0.0f}, Units {0.0f};
+            float factor {0.0f}, units {0.0f};
 
             // clang-format off
             auto operator<=> (const PolygonOffset&) const = default;
@@ -691,11 +691,11 @@ namespace vgfw
 
         struct RasterizerState
         {
-            PolygonMode                  PolygonMode {PolygonMode::Fill};
-            CullMode                     CullMode {CullMode::Back};
-            std::optional<PolygonOffset> PolygonOffset;
-            bool                         DepthClampEnable {false};
-            bool                         ScissorTest {false};
+            PolygonMode                  polygonMode {PolygonMode::Fill};
+            CullMode                     cullMode {CullMode::Back};
+            std::optional<PolygonOffset> polygonOffset;
+            bool                         depthClampEnable {false};
+            bool                         scissorTest {false};
 
             // clang-format off
             auto operator<=> (const RasterizerState&) const = default;
@@ -713,13 +713,13 @@ namespace vgfw
             public:
                 Builder() = default;
 
-                Builder& SetShaderProgram(GLuint program);
-                Builder& SetVAO(GLuint vao);
-                Builder& SetDepthStencil(const DepthStencilState&);
-                Builder& SetRasterizerState(const RasterizerState&);
-                Builder& SetBlendState(uint32_t attachment, const BlendState&);
+                Builder& setShaderProgram(GLuint program);
+                Builder& setVAO(GLuint vao);
+                Builder& setDepthStencil(const DepthStencilState&);
+                Builder& setRasterizerState(const RasterizerState&);
+                Builder& setBlendState(uint32_t attachment, const BlendState&);
 
-                GraphicsPipeline Build();
+                GraphicsPipeline build();
 
             private:
                 GLuint m_Program = GL_NONE;
@@ -746,9 +746,9 @@ namespace vgfw
 
         struct ImageData
         {
-            GLenum      Format {GL_NONE};
-            GLenum      DataType {GL_NONE};
-            const void* Pixels {nullptr};
+            GLenum      format {GL_NONE};
+            GLenum      dataType {GL_NONE};
+            const void* pixels {nullptr};
         };
 
         template<typename T>
@@ -758,17 +758,17 @@ namespace vgfw
 
         struct AttachmentInfo
         {
-            Texture&                  Image;
-            uint32_t                  MipLevel {0};
-            std::optional<uint32_t>   Layer {};
-            std::optional<uint32_t>   Face {};
-            std::optional<ClearValue> ClearValue {};
+            Texture&                  image;
+            uint32_t                  mipLevel {0};
+            std::optional<uint32_t>   layer {};
+            std::optional<uint32_t>   face {};
+            std::optional<ClearValue> clearValue {};
         };
         struct RenderingInfo
         {
-            Rect2D                        Area;
-            std::vector<AttachmentInfo>   ColorAttachments;
-            std::optional<AttachmentInfo> DepthAttachment {};
+            Rect2D                        area;
+            std::vector<AttachmentInfo>   colorAttachments;
+            std::optional<AttachmentInfo> depthAttachment {};
         };
 
         enum class PrimitiveTopology : GLenum
@@ -791,78 +791,78 @@ namespace vgfw
             RenderContext();
             ~RenderContext();
 
-            RenderContext& SetViewport(const Rect2D& rect);
-            static Rect2D  GetViewport();
+            RenderContext& setViewport(const Rect2D& rect);
+            static Rect2D  getViewport();
 
-            RenderContext& SetScissor(const Rect2D& rect);
+            RenderContext& setScissor(const Rect2D& rect);
 
-            static Buffer       CreateBuffer(GLsizeiptr size, const void* data = nullptr);
-            static VertexBuffer CreateVertexBuffer(GLsizei stride, int64_t capacity, const void* data = nullptr);
-            static IndexBuffer  CreateIndexBuffer(IndexType, int64_t capacity, const void* data = nullptr);
+            static Buffer       createBuffer(GLsizeiptr size, const void* data = nullptr);
+            static VertexBuffer createVertexBuffer(GLsizei stride, int64_t capacity, const void* data = nullptr);
+            static IndexBuffer  createIndexBuffer(IndexType, int64_t capacity, const void* data = nullptr);
 
-            GLuint GetVertexArray(const VertexAttributes&);
+            GLuint getVertexArray(const VertexAttributes&);
 
-            static GLuint CreateGraphicsProgram(const std::string&                vertSource,
+            static GLuint createGraphicsProgram(const std::string&                vertSource,
                                                 const std::string&                fragSource,
                                                 const std::optional<std::string>& geomSource = std::nullopt);
 
-            static GLuint CreateComputeProgram(const std::string& compSource);
+            static GLuint createComputeProgram(const std::string& compSource);
 
             static Texture
-            CreateTexture2D(Extent2D extent, PixelFormat, uint32_t numMipLevels = 1u, uint32_t numLayers = 0u);
-            static Texture CreateTexture3D(Extent2D, uint32_t depth, PixelFormat);
+            createTexture2D(Extent2D extent, PixelFormat, uint32_t numMipLevels = 1u, uint32_t numLayers = 0u);
+            static Texture createTexture3D(Extent2D, uint32_t depth, PixelFormat);
             static Texture
-            CreateCubemap(uint32_t size, PixelFormat, uint32_t numMipLevels = 1u, uint32_t numLayers = 0u);
+            createCubemap(uint32_t size, PixelFormat, uint32_t numMipLevels = 1u, uint32_t numLayers = 0u);
 
-            RenderContext& GenerateMipmaps(Texture&);
+            RenderContext& generateMipmaps(Texture&);
 
-            RenderContext& SetupSampler(Texture&, const SamplerInfo&);
-            static GLuint  CreateSampler(const SamplerInfo&);
+            RenderContext& setupSampler(Texture&, const SamplerInfo&);
+            static GLuint  createSampler(const SamplerInfo&);
 
-            RenderContext& Clear(Texture&);
+            RenderContext& clear(Texture&);
             // Upload Texture2D
-            RenderContext& Upload(Texture&, GLint mipLevel, glm::uvec2 dimensions, const ImageData&);
+            RenderContext& upload(Texture&, GLint mipLevel, glm::uvec2 dimensions, const ImageData&);
             // Upload Cubemap face
-            RenderContext& Upload(Texture&, GLint mipLevel, GLint face, glm::uvec2 dimensions, const ImageData&);
+            RenderContext& upload(Texture&, GLint mipLevel, GLint face, glm::uvec2 dimensions, const ImageData&);
             RenderContext&
-            Upload(Texture&, GLint mipLevel, const glm::uvec3& dimensions, GLint face, GLsizei layer, const ImageData&);
+            upload(Texture&, GLint mipLevel, const glm::uvec3& dimensions, GLint face, GLsizei layer, const ImageData&);
 
-            RenderContext& Clear(Buffer&);
-            RenderContext& Upload(Buffer&, GLintptr offset, GLsizeiptr size, const void* data);
-            static void*   Map(Buffer&);
-            RenderContext& Unmap(Buffer&);
+            RenderContext& clear(Buffer&);
+            RenderContext& upload(Buffer&, GLintptr offset, GLsizeiptr size, const void* data);
+            static void*   map(Buffer&);
+            RenderContext& unmap(Buffer&);
 
-            RenderContext& Destroy(Buffer&);
-            RenderContext& Destroy(Texture&);
-            RenderContext& Destroy(GraphicsPipeline&);
+            RenderContext& destroy(Buffer&);
+            RenderContext& destroy(Texture&);
+            RenderContext& destroy(GraphicsPipeline&);
 
-            RenderContext& Dispatch(GLuint computeProgram, const glm::uvec3& numGroups);
+            RenderContext& dispatch(GLuint computeProgram, const glm::uvec3& numGroups);
 
-            GLuint         BeginRendering(const RenderingInfo& info);
-            RenderContext& BeginRendering(const Rect2D&            area,
+            GLuint         beginRendering(const RenderingInfo& info);
+            RenderContext& beginRendering(const Rect2D&            area,
                                           std::optional<glm::vec4> clearColor   = {},
                                           std::optional<float>     clearDepth   = {},
                                           std::optional<int>       clearStencil = {});
-            RenderContext& EndRendering(GLuint frameBufferID);
+            RenderContext& endRendering(GLuint frameBufferID);
 
-            RenderContext& SetUniform1f(const std::string& name, float);
-            RenderContext& SetUniform1i(const std::string& name, int32_t);
-            RenderContext& SetUniform1ui(const std::string& name, uint32_t);
+            RenderContext& setUniform1f(const std::string& name, float);
+            RenderContext& setUniform1i(const std::string& name, int32_t);
+            RenderContext& setUniform1ui(const std::string& name, uint32_t);
 
-            RenderContext& SetUniformVec3(const std::string& name, const glm::vec3&);
-            RenderContext& SetUniformVec4(const std::string& name, const glm::vec4&);
+            RenderContext& setUniformVec3(const std::string& name, const glm::vec3&);
+            RenderContext& setUniformVec4(const std::string& name, const glm::vec4&);
 
-            RenderContext& SetUniformMat3(const std::string& name, const glm::mat3&);
-            RenderContext& SetUniformMat4(const std::string& name, const glm::mat4&);
+            RenderContext& setUniformMat3(const std::string& name, const glm::mat3&);
+            RenderContext& setUniformMat4(const std::string& name, const glm::mat4&);
 
-            RenderContext& BindGraphicsPipeline(const GraphicsPipeline& gp);
-            RenderContext& BindImage(GLuint unit, const Texture&, GLint mipLevel, GLenum access);
-            RenderContext& BindTexture(GLuint unit, const Texture&, std::optional<GLuint> samplerId = {});
-            RenderContext& BindUniformBuffer(GLuint index, const UniformBuffer&);
+            RenderContext& bindGraphicsPipeline(const GraphicsPipeline& gp);
+            RenderContext& bindImage(GLuint unit, const Texture&, GLint mipLevel, GLenum access);
+            RenderContext& bindTexture(GLuint unit, const Texture&, std::optional<GLuint> samplerId = {});
+            RenderContext& bindUniformBuffer(GLuint index, const UniformBuffer&);
 
-            RenderContext& DrawFullScreenTriangle();
-            RenderContext& DrawCube();
-            RenderContext& Draw(OptionalReference<const VertexBuffer> vertexBuffer,
+            RenderContext& drawFullScreenTriangle();
+            RenderContext& drawCube();
+            RenderContext& draw(OptionalReference<const VertexBuffer> vertexBuffer,
                                 OptionalReference<const IndexBuffer>  indexBuffer,
                                 uint32_t                              numIndices,
                                 uint32_t                              numVertices,
@@ -872,44 +872,44 @@ namespace vgfw
             {
                 void operator()(auto* ptr)
                 {
-                    Context.Destroy(*ptr);
+                    context.destroy(*ptr);
                     delete ptr;
                 }
 
-                RenderContext& Context;
+                RenderContext& context;
             };
 
         private:
-            static GLuint CreateVertexArray(const VertexAttributes&);
+            static GLuint createVertexArray(const VertexAttributes&);
 
-            static Texture CreateImmutableTexture(Extent2D,
+            static Texture createImmutableTexture(Extent2D,
                                                   uint32_t depth,
                                                   PixelFormat,
                                                   uint32_t numFaces,
                                                   uint32_t numMipLevels,
                                                   uint32_t numLayers);
 
-            static void CreateFaceView(Texture& cubeMap, GLuint mipLevel, GLuint layer, GLuint face);
-            static void AttachTexture(GLuint framebuffer, GLenum attachment, const AttachmentInfo&);
+            static void createFaceView(Texture& cubeMap, GLuint mipLevel, GLuint layer, GLuint face);
+            static void attachTexture(GLuint framebuffer, GLenum attachment, const AttachmentInfo&);
 
-            static GLuint CreateShaderProgram(std::initializer_list<GLuint> shaders);
-            static GLuint CreateShaderObject(GLenum type, const std::string& shaderSource);
+            static GLuint createShaderProgram(std::initializer_list<GLuint> shaders);
+            static GLuint createShaderObject(GLenum type, const std::string& shaderSource);
 
-            void SetShaderProgram(GLuint);
-            void SetVertexArray(GLuint);
-            void SetVertexBuffer(const VertexBuffer&) const;
-            void SetIndexBuffer(const IndexBuffer&) const;
+            void setShaderProgram(GLuint);
+            void setVertexArray(GLuint);
+            void setVertexBuffer(const VertexBuffer&) const;
+            void setIndexBuffer(const IndexBuffer&) const;
 
-            void SetDepthTest(bool enabled, CompareOp);
-            void SetDepthWrite(bool enabled);
+            void setDepthTest(bool enabled, CompareOp);
+            void setDepthWrite(bool enabled);
 
-            void SetPolygonMode(PolygonMode);
-            void SetPolygonOffset(std::optional<PolygonOffset>);
-            void SetCullMode(CullMode);
-            void SetDepthClamp(bool enabled);
-            void SetScissorTest(bool enabled);
+            void setPolygonMode(PolygonMode);
+            void setPolygonOffset(std::optional<PolygonOffset>);
+            void setCullMode(CullMode);
+            void setDepthClamp(bool enabled);
+            void setScissorTest(bool enabled);
 
-            void SetBlendState(GLuint index, const BlendState&);
+            void setBlendState(GLuint index, const BlendState&);
 
         private:
             bool             m_RenderingStarted = false;
@@ -932,15 +932,15 @@ namespace vgfw
             public:
                 struct Desc
                 {
-                    GLsizeiptr Size;
+                    GLsizeiptr size;
                 };
 
                 // NOLINTBEGIN
                 void create(const Desc&, void* allocator);
-                void destroy(const Desc&, void* allocator);
+                void destroy(const Desc&, void* allocator) const;
                 // NOLINTEND
 
-                Buffer* Handle = nullptr;
+                Buffer* handle = nullptr;
             };
 
             enum class WrapMode
@@ -955,23 +955,23 @@ namespace vgfw
             public:
                 struct Desc
                 {
-                    Extent2D    Extent;
-                    uint32_t    Depth {0};
-                    uint32_t    NumMipLevels {1};
-                    uint32_t    Layers {0};
-                    PixelFormat Format {PixelFormat::Unknown};
+                    Extent2D    extent;
+                    uint32_t    depth {0};
+                    uint32_t    numMipLevels {1};
+                    uint32_t    layers {0};
+                    PixelFormat format {PixelFormat::Unknown};
 
-                    bool        ShadowSampler {false};
-                    WrapMode    Wrap {WrapMode::ClampToEdge};
-                    TexelFilter Filter {TexelFilter::Linear};
+                    bool        shadowSampler {false};
+                    WrapMode    wrap {WrapMode::ClampToEdge};
+                    TexelFilter filter {TexelFilter::Linear};
                 };
 
                 // NOLINTBEGIN
                 void create(const Desc& desc, void* allocator);
-                void destroy(const Desc& desc, void* allocator);
+                void destroy(const Desc& desc, void* allocator) const;
                 // NOLINTEND
 
-                Texture* Handle = nullptr;
+                Texture* handle = nullptr;
             };
 
             class TransientResources
@@ -986,13 +986,13 @@ namespace vgfw
                 TransientResources& operator=(const TransientResources&)     = delete;
                 TransientResources& operator=(TransientResources&&) noexcept = delete;
 
-                void Update(float dt);
+                void update(float dt);
 
-                Texture* AcquireTexture(const FrameGraphTexture::Desc&);
-                void     ReleaseTexture(const FrameGraphTexture::Desc&, Texture*);
+                Texture* acquireTexture(const FrameGraphTexture::Desc&);
+                void     releaseTexture(const FrameGraphTexture::Desc&, Texture*);
 
-                Buffer* AcquireBuffer(const FrameGraphBuffer::Desc&);
-                void    ReleaseBuffer(const FrameGraphBuffer::Desc&, Buffer*);
+                Buffer* acquireBuffer(const FrameGraphBuffer::Desc&);
+                void    releaseBuffer(const FrameGraphBuffer::Desc&, Buffer*);
 
             private:
                 RenderContext& m_RenderContext;
@@ -1003,8 +1003,8 @@ namespace vgfw
                 template<typename T>
                 struct ResourceEntry
                 {
-                    T     Resource;
-                    float Life;
+                    T     resource;
+                    float life;
                 };
                 template<typename T>
                 using ResourcePool = std::vector<ResourceEntry<T>>;
@@ -1036,8 +1036,8 @@ namespace vgfw
 
         struct RendererInitInfo
         {
-            std::shared_ptr<window::Window> Window {nullptr};
-            bool                            EnableImGuiDocking {false};
+            std::shared_ptr<window::Window> window {nullptr};
+            bool                            enableImGuiDocking {false};
         };
 
         void init(const RendererInitInfo& initInfo);
@@ -1055,33 +1055,35 @@ namespace vgfw
     {
         struct Vertex
         {
-            glm::vec3 Position;
-            glm::vec3 Normal;
-            glm::vec2 TexCoords;
+            glm::vec3 position;
+            glm::vec3 normal;
+            glm::vec2 texCoords;
         };
 
         struct MeshPrimitive
         {
-            std::string           Name;
-            std::vector<Vertex>   Vertices;
-            std::vector<uint32_t> Indices;
-            int                   MaterialIndex {-1};
+            std::string           name;
+            std::vector<Vertex>   vertices;
+            std::vector<uint32_t> indices;
+            int                   materialIndex {-1};
 
-            std::shared_ptr<renderer::IndexBuffer>  IndexBuf {nullptr};
-            std::shared_ptr<renderer::VertexBuffer> VertexBuf {nullptr};
+            renderer::VertexFormat* vertexFormat {nullptr};
+
+            std::shared_ptr<renderer::IndexBuffer>  indexBuffer {nullptr};
+            std::shared_ptr<renderer::VertexBuffer> vertexBuffer {nullptr};
         };
 
         struct Material
         {
-            int BaseColorTextureIndex {-1};
-            int MetallicRoughnessTextureIndex {-1};
+            int baseColorTextureIndex {-1};
+            int metallicRoughnessTextureIndex {-1};
         };
 
         struct Model
         {
-            std::vector<MeshPrimitive>                        Meshes;
-            std::unordered_map<int, vgfw::renderer::Texture*> TextureMap;
-            std::unordered_map<int, Material>                 MaterialMap;
+            std::vector<MeshPrimitive>                        meshPrimitives;
+            std::unordered_map<int, vgfw::renderer::Texture*> textureMap;
+            std::unordered_map<int, Material>                 materialMap;
         };
     } // namespace resource
 
@@ -1110,7 +1112,7 @@ namespace std
         std::size_t operator()(const vgfw::renderer::VertexAttribute& attribute) const noexcept
         {
             std::size_t h {0};
-            vgfw::utils::hashCombine(h, attribute.VertType, attribute.Offset);
+            vgfw::utils::hashCombine(h, attribute.vertType, attribute.offset);
             return h;
         }
     };
@@ -1122,15 +1124,15 @@ namespace std
         {
             std::size_t h {0};
             vgfw::utils::hashCombine(h,
-                                     desc.Extent.Width,
-                                     desc.Extent.Height,
-                                     desc.Depth,
-                                     desc.NumMipLevels,
-                                     desc.Layers,
-                                     desc.Format,
-                                     desc.ShadowSampler,
-                                     desc.Wrap,
-                                     desc.Filter);
+                                     desc.extent.width,
+                                     desc.extent.height,
+                                     desc.depth,
+                                     desc.numMipLevels,
+                                     desc.layers,
+                                     desc.format,
+                                     desc.shadowSampler,
+                                     desc.wrap,
+                                     desc.filter);
             return h;
         }
     };
@@ -1140,7 +1142,7 @@ namespace std
         std::size_t operator()(const vgfw::renderer::framegraph::FrameGraphBuffer::Desc& desc) const noexcept
         {
             std::size_t h {0};
-            vgfw::utils::hashCombine(h, desc.Size);
+            vgfw::utils::hashCombine(h, desc.size);
             return h;
         }
     };
@@ -1204,7 +1206,7 @@ namespace vgfw
 
     namespace window
     {
-        bool GLFWWindow::Init(const WindowInitInfo& initInfo)
+        bool GLFWWindow::init(const WindowInitInfo& initInfo)
         {
             if (!glfwInit())
             {
@@ -1212,9 +1214,9 @@ namespace vgfw
                 return false;
             }
 
-            if (initInfo.EnableMSAA)
+            if (initInfo.enableMSAA)
             {
-                glfwWindowHint(GLFW_SAMPLES, initInfo.AASample);
+                glfwWindowHint(GLFW_SAMPLES, initInfo.aaSample);
             }
 
             glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
@@ -1224,7 +1226,7 @@ namespace vgfw
 
             glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-            m_Window = glfwCreateWindow(initInfo.Width, initInfo.Height, initInfo.Title.c_str(), nullptr, nullptr);
+            m_Window = glfwCreateWindow(initInfo.width, initInfo.height, initInfo.title.c_str(), nullptr, nullptr);
             if (!m_Window)
             {
                 VGFW_ERROR("Failed to create GLFW window");
@@ -1232,15 +1234,15 @@ namespace vgfw
                 return false;
             }
 
-            m_Data.Title     = initInfo.Title;
-            m_Data.Width     = initInfo.Width;
-            m_Data.Height    = initInfo.Height;
-            m_Data.WindowSys = this;
+            m_Data.title     = initInfo.title;
+            m_Data.width     = initInfo.width;
+            m_Data.height    = initInfo.height;
+            m_Data.windowSys = this;
 
             return true;
         }
 
-        void GLFWWindow::Shutdown()
+        void GLFWWindow::shutdown()
         {
             if (m_Window)
             {
@@ -1251,11 +1253,11 @@ namespace vgfw
             glfwTerminate();
         }
 
-        void GLFWWindow::OnTick() { glfwPollEvents(); }
+        void GLFWWindow::onTick() { glfwPollEvents(); }
 
-        bool GLFWWindow::ShouldClose() const { return m_Window && glfwWindowShouldClose(m_Window); }
+        bool GLFWWindow::shouldClose() const { return m_Window && glfwWindowShouldClose(m_Window); }
 
-        bool GLFWWindow::IsMinimized() const
+        bool GLFWWindow::isMinimized() const
         {
             if (m_Window)
             {
@@ -1267,7 +1269,7 @@ namespace vgfw
             return false;
         }
 
-        void GLFWWindow::MakeCurrentContext()
+        void GLFWWindow::makeCurrentContext()
         {
             if (m_Window)
             {
@@ -1275,7 +1277,7 @@ namespace vgfw
             }
         }
 
-        void GLFWWindow::SwapBuffers()
+        void GLFWWindow::swapBuffers()
         {
             if (m_Window)
             {
@@ -1283,7 +1285,7 @@ namespace vgfw
             }
         }
 
-        void GLFWWindow::SetHideCursor(bool hide)
+        void GLFWWindow::setHideCursor(bool hide)
         {
             if (m_Window)
             {
@@ -1302,7 +1304,7 @@ namespace vgfw
                     break;
             }
 
-            if (!window || !window->Init(windowInitInfo))
+            if (!window || !window->init(windowInitInfo))
             {
                 throw std::runtime_error("Failed to initialize window!");
             }
@@ -1313,18 +1315,18 @@ namespace vgfw
 
     namespace renderer
     {
-        void GraphicsContext::Init(const std::shared_ptr<window::Window>& window)
+        void GraphicsContext::init(const std::shared_ptr<window::Window>& window)
         {
             m_Window = window;
 
-            window->MakeCurrentContext();
-            int version = LoadGL();
+            window->makeCurrentContext();
+            int version = loadGl();
 
             assert(version);
             if (version)
             {
-                int minMajor = GetMinMajor();
-                int minMinor = GetMinMinor();
+                int minMajor = getMinMajor();
+                int minMinor = getMinMinor();
                 VGFW_INFO("[OpenGLContext] Loaded {0}.{1}", GLVersion.major, GLVersion.minor);
 
                 std::stringstream ss;
@@ -1341,22 +1343,22 @@ namespace vgfw
             m_SupportDSA = GLAD_GL_VERSION_4_5 || GLAD_GL_VERSION_4_6;
         }
 
-        void GraphicsContext::Shutdown() { m_Window->Shutdown(); }
+        void GraphicsContext::shutdown() { m_Window->shutdown(); }
 
-        void GraphicsContext::SwapBuffers() { m_Window->SwapBuffers(); }
+        void GraphicsContext::swapBuffers() { m_Window->swapBuffers(); }
 
-        void GraphicsContext::SetVSync(bool vsyncEnabled) { glfwSwapInterval(vsyncEnabled); }
+        void GraphicsContext::setVSync(bool vsyncEnabled) { glfwSwapInterval(vsyncEnabled); }
 
-        int GraphicsContext::LoadGL() { return gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)); }
+        int GraphicsContext::loadGl() { return gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)); }
 
-        int GraphicsContext::GetMinMajor() { return VGFW_RENDER_API_OPENGL_MIN_MAJOR; }
+        int GraphicsContext::getMinMajor() { return VGFW_RENDER_API_OPENGL_MIN_MAJOR; }
 
-        int GraphicsContext::GetMinMinor() { return VGFW_RENDER_API_OPENGL_MIN_MINOR; }
+        int GraphicsContext::getMinMinor() { return VGFW_RENDER_API_OPENGL_MIN_MINOR; }
 
         Buffer::Buffer(Buffer&& other) noexcept :
             m_Id(other.m_Id), m_Size(other.m_Size), m_MappedMemory(other.m_MappedMemory)
         {
-            memset(&other, 0, sizeof(Buffer));
+            memset(reinterpret_cast<void*>(&other), 0, sizeof(Buffer));
         }
 
         Buffer::~Buffer()
@@ -1369,30 +1371,30 @@ namespace vgfw
         {
             if (this != &rhs)
             {
-                memcpy(this, &rhs, sizeof(Buffer));
-                memset(&rhs, 0, sizeof(Buffer));
+                memcpy(reinterpret_cast<void*>(this), reinterpret_cast<void*>(&rhs), sizeof(Buffer));
+                memset(reinterpret_cast<void*>(&rhs), 0, sizeof(Buffer));
             }
             return *this;
         }
 
         Buffer::operator bool() const { return m_Id != GL_NONE; }
 
-        GLsizeiptr Buffer::GetSize() const { return m_Size; }
-        bool       Buffer::IsMapped() const { return m_MappedMemory != nullptr; }
+        GLsizeiptr Buffer::getSize() const { return m_Size; }
+        bool       Buffer::isMapped() const { return m_MappedMemory != nullptr; }
 
         Buffer::Buffer(GLuint id, GLsizeiptr size) : m_Id(id), m_Size(size) {}
 
         Buffer::operator GLuint() const { return m_Id; }
 
-        IndexType  IndexBuffer::GetIndexType() const { return m_IndexType; }
-        GLsizeiptr IndexBuffer::GetCapacity() const { return m_Size / static_cast<GLsizei>(m_IndexType); }
+        IndexType  IndexBuffer::getIndexType() const { return m_IndexType; }
+        GLsizeiptr IndexBuffer::getCapacity() const { return m_Size / static_cast<GLsizei>(m_IndexType); }
 
         IndexBuffer::IndexBuffer(Buffer buffer, IndexType indexType) :
             Buffer {std::move(buffer)}, m_IndexType {indexType}
         {}
 
-        GLsizei    VertexBuffer::GetStride() const { return m_Stride; }
-        GLsizeiptr VertexBuffer::GetCapacity() const { return m_Size / m_Stride; }
+        GLsizei    VertexBuffer::getStride() const { return m_Stride; }
+        GLsizeiptr VertexBuffer::getCapacity() const { return m_Size / m_Stride; }
 
         VertexBuffer::VertexBuffer(Buffer buffer, GLsizei stride) : Buffer {std::move(buffer)}, m_Stride {stride} {}
 
@@ -1421,15 +1423,15 @@ namespace vgfw
             return 0;
         }
 
-        std::size_t VertexFormat::GetHash() const { return m_Hash; }
+        std::size_t VertexFormat::getHash() const { return m_Hash; }
 
-        const VertexAttributes& VertexFormat::GetAttributes() const { return m_Attributes; }
-        bool                    VertexFormat::Contains(AttributeLocation location) const
+        const VertexAttributes& VertexFormat::getAttributes() const { return m_Attributes; }
+        bool                    VertexFormat::contains(AttributeLocation location) const
         {
             return m_Attributes.contains(static_cast<int32_t>(location));
         }
 
-        bool VertexFormat::Contains(std::initializer_list<AttributeLocation> locations) const
+        bool VertexFormat::contains(std::initializer_list<AttributeLocation> locations) const
         {
             return std::all_of(std::cbegin(locations), std::cend(locations), [&](auto location) {
                 return std::any_of(m_Attributes.cbegin(),
@@ -1438,7 +1440,7 @@ namespace vgfw
             });
         }
 
-        uint32_t VertexFormat::GetStride() const { return m_Stride; }
+        uint32_t VertexFormat::getStride() const { return m_Stride; }
 
         VertexFormat::VertexFormat(std::size_t hash, VertexAttributes&& attributes, uint32_t stride) :
             m_Hash {hash}, m_Attributes {attributes}, m_Stride {stride}
@@ -1446,19 +1448,19 @@ namespace vgfw
 
         using Builder = VertexFormat::Builder;
 
-        Builder& Builder::SetAttribute(AttributeLocation location, const VertexAttribute& attribute)
+        Builder& Builder::setAttribute(AttributeLocation location, const VertexAttribute& attribute)
         {
             m_Attributes.insert_or_assign(static_cast<int32_t>(location), attribute);
             return *this;
         }
 
-        std::shared_ptr<VertexFormat> Builder::Build()
+        std::shared_ptr<VertexFormat> Builder::build()
         {
             uint32_t    stride {0};
             std::size_t hash {0};
             for (const auto& [location, attribute] : m_Attributes)
             {
-                stride += getSize(attribute.VertType);
+                stride += getSize(attribute.vertType);
                 utils::hashCombine(hash, location, attribute);
             }
 
@@ -1471,15 +1473,15 @@ namespace vgfw
             return vertexFormat;
         }
 
-        std::shared_ptr<VertexFormat> Builder::BuildDefault()
+        std::shared_ptr<VertexFormat> Builder::buildDefault()
         {
             m_Attributes.clear();
 
-            SetAttribute(AttributeLocation::Position, {.VertType = VertexAttribute::Type::Float3, .Offset = 0});
-            SetAttribute(AttributeLocation::Normal_Color, {.VertType = VertexAttribute::Type::Float3, .Offset = 12});
-            SetAttribute(AttributeLocation::TexCoords, {.VertType = VertexAttribute::Type::Float2, .Offset = 24});
+            setAttribute(AttributeLocation::Position, {.vertType = VertexAttribute::Type::Float3, .offset = 0});
+            setAttribute(AttributeLocation::Normal_Color, {.vertType = VertexAttribute::Type::Float3, .offset = 12});
+            setAttribute(AttributeLocation::TexCoords, {.vertType = VertexAttribute::Type::Float2, .offset = 24});
 
-            return Build();
+            return build();
         }
 
         Texture::Texture(Texture&& other) noexcept :
@@ -1487,7 +1489,7 @@ namespace vgfw
             m_Depth {other.m_Depth}, m_NumMipLevels {other.m_NumMipLevels}, m_NumLayers {other.m_NumLayers},
             m_PixelFormat {other.m_PixelFormat}
         {
-            memset(&other, 0, sizeof(Texture));
+            memset(reinterpret_cast<void*>(&other), 0, sizeof(Texture));
         }
 
         Texture::~Texture()
@@ -1500,21 +1502,21 @@ namespace vgfw
         {
             if (this != &rhs)
             {
-                memcpy(this, &rhs, sizeof(Texture));
-                memset(&rhs, 0, sizeof(Texture));
+                memcpy(reinterpret_cast<void*>(this), reinterpret_cast<void*>(&rhs), sizeof(Texture));
+                memset(reinterpret_cast<void*>(&rhs), 0, sizeof(Texture));
             }
             return *this;
         }
 
         Texture::operator bool() const { return m_Id != GL_NONE; }
 
-        GLenum Texture::GetType() const { return m_Type; }
+        GLenum Texture::getType() const { return m_Type; }
 
-        Extent2D    Texture::GetExtent() const { return m_Extent; }
-        uint32_t    Texture::GetDepth() const { return m_Depth; }
-        uint32_t    Texture::GetNumMipLevels() const { return m_NumMipLevels; }
-        uint32_t    Texture::GetNumLayers() const { return m_NumLayers; }
-        PixelFormat Texture::GetPixelFormat() const { return m_PixelFormat; }
+        Extent2D    Texture::getExtent() const { return m_Extent; }
+        uint32_t    Texture::getDepth() const { return m_Depth; }
+        uint32_t    Texture::getNumMipLevels() const { return m_NumMipLevels; }
+        uint32_t    Texture::getNumLayers() const { return m_NumLayers; }
+        PixelFormat Texture::getPixelFormat() const { return m_PixelFormat; }
 
         Texture::Texture(GLuint      id,
                          GLenum      type,
@@ -1588,31 +1590,31 @@ namespace vgfw
             return "Undefined";
         }
 
-        GraphicsPipeline::Builder& GraphicsPipeline::Builder::SetShaderProgram(GLuint program)
+        GraphicsPipeline::Builder& GraphicsPipeline::Builder::setShaderProgram(GLuint program)
         {
             m_Program = program;
             return *this;
         }
 
-        GraphicsPipeline::Builder& GraphicsPipeline::Builder::SetVAO(GLuint vao)
+        GraphicsPipeline::Builder& GraphicsPipeline::Builder::setVAO(GLuint vao)
         {
             m_VAO = vao;
             return *this;
         }
 
-        GraphicsPipeline::Builder& GraphicsPipeline::Builder::SetDepthStencil(const DepthStencilState& state)
+        GraphicsPipeline::Builder& GraphicsPipeline::Builder::setDepthStencil(const DepthStencilState& state)
         {
             m_DepthStencilState = state;
             return *this;
         }
 
-        GraphicsPipeline::Builder& GraphicsPipeline::Builder::SetRasterizerState(const RasterizerState& state)
+        GraphicsPipeline::Builder& GraphicsPipeline::Builder::setRasterizerState(const RasterizerState& state)
         {
             m_RasterizerState = state;
             return *this;
         }
 
-        GraphicsPipeline::Builder& GraphicsPipeline::Builder::SetBlendState(uint32_t          attachment,
+        GraphicsPipeline::Builder& GraphicsPipeline::Builder::setBlendState(uint32_t          attachment,
                                                                             const BlendState& state)
         {
             assert(attachment < kMaxNumBlendStates);
@@ -1620,7 +1622,7 @@ namespace vgfw
             return *this;
         }
 
-        GraphicsPipeline GraphicsPipeline::Builder::Build()
+        GraphicsPipeline GraphicsPipeline::Builder::build()
         {
             GraphicsPipeline g;
 
@@ -1738,18 +1740,18 @@ namespace vgfw
             m_CurrentPipeline = {};
         }
 
-        RenderContext& RenderContext::SetViewport(const Rect2D& rect)
+        RenderContext& RenderContext::setViewport(const Rect2D& rect)
         {
             auto& current = m_CurrentPipeline.m_Viewport;
             if (rect != current)
             {
-                glViewport(rect.Offset.X, rect.Offset.Y, rect.Extent.Width, rect.Extent.Height);
+                glViewport(rect.offset.x, rect.offset.y, rect.extent.width, rect.extent.height);
                 current = rect;
             }
             return *this;
         }
 
-        Rect2D RenderContext::GetViewport()
+        Rect2D RenderContext::getViewport()
         {
             GLint viewport[4];
             glGetIntegerv(GL_VIEWPORT, viewport);
@@ -1758,18 +1760,18 @@ namespace vgfw
                     {static_cast<uint32_t>(viewport[2]), static_cast<uint32_t>(viewport[3])}};
         }
 
-        RenderContext& RenderContext::SetScissor(const Rect2D& rect)
+        RenderContext& RenderContext::setScissor(const Rect2D& rect)
         {
             auto& current = m_CurrentPipeline.m_Scissor;
             if (rect != current)
             {
-                glScissor(rect.Offset.X, rect.Offset.Y, rect.Extent.Width, rect.Extent.Height);
+                glScissor(rect.offset.x, rect.offset.y, rect.extent.width, rect.extent.height);
                 current = rect;
             }
             return *this;
         }
 
-        Buffer RenderContext::CreateBuffer(GLsizeiptr size, const void* data)
+        Buffer RenderContext::createBuffer(GLsizeiptr size, const void* data)
         {
             GLuint buffer;
             glCreateBuffers(1, &buffer);
@@ -1778,18 +1780,18 @@ namespace vgfw
             return {buffer, size};
         }
 
-        VertexBuffer RenderContext::CreateVertexBuffer(GLsizei stride, int64_t capacity, const void* data)
+        VertexBuffer RenderContext::createVertexBuffer(GLsizei stride, int64_t capacity, const void* data)
         {
-            return VertexBuffer {CreateBuffer(stride * capacity, data), stride};
+            return VertexBuffer {createBuffer(stride * capacity, data), stride};
         }
 
-        IndexBuffer RenderContext::CreateIndexBuffer(IndexType indexType, int64_t capacity, const void* data)
+        IndexBuffer RenderContext::createIndexBuffer(IndexType indexType, int64_t capacity, const void* data)
         {
             const auto stride = static_cast<GLsizei>(indexType);
-            return IndexBuffer {CreateBuffer(stride * capacity, data), indexType};
+            return IndexBuffer {createBuffer(stride * capacity, data), indexType};
         }
 
-        GLuint RenderContext::GetVertexArray(const VertexAttributes& attributes)
+        GLuint RenderContext::getVertexArray(const VertexAttributes& attributes)
         {
             assert(!attributes.empty());
 
@@ -1800,61 +1802,61 @@ namespace vgfw
             auto it = m_VertexArrays.find(hash);
             if (it == m_VertexArrays.cend())
             {
-                it = m_VertexArrays.emplace(hash, CreateVertexArray(attributes)).first;
+                it = m_VertexArrays.emplace(hash, createVertexArray(attributes)).first;
                 VGFW_TRACE("[RenderContext] Created VAO: {0}", hash);
             }
 
             return it->second;
         }
 
-        GLuint RenderContext::CreateGraphicsProgram(const std::string&                vertSource,
+        GLuint RenderContext::createGraphicsProgram(const std::string&                vertSource,
                                                     const std::string&                fragSource,
                                                     const std::optional<std::string>& geomSource)
         {
-            return CreateShaderProgram({
-                CreateShaderObject(GL_VERTEX_SHADER, vertSource),
-                geomSource ? CreateShaderObject(GL_GEOMETRY_SHADER, *geomSource) : GL_NONE,
-                CreateShaderObject(GL_FRAGMENT_SHADER, fragSource),
+            return createShaderProgram({
+                createShaderObject(GL_VERTEX_SHADER, vertSource),
+                geomSource ? createShaderObject(GL_GEOMETRY_SHADER, *geomSource) : GL_NONE,
+                createShaderObject(GL_FRAGMENT_SHADER, fragSource),
             });
         }
 
-        GLuint RenderContext::CreateComputeProgram(const std::string& compSource)
+        GLuint RenderContext::createComputeProgram(const std::string& compSource)
         {
-            return CreateShaderProgram({
-                CreateShaderObject(GL_COMPUTE_SHADER, compSource),
+            return createShaderProgram({
+                createShaderObject(GL_COMPUTE_SHADER, compSource),
             });
         }
 
-        Texture RenderContext::CreateTexture2D(Extent2D    extent,
+        Texture RenderContext::createTexture2D(Extent2D    extent,
                                                PixelFormat pixelFormat,
                                                uint32_t    numMipLevels,
                                                uint32_t    numLayers)
         {
-            assert(extent.Width > 0 && extent.Height > 0 && pixelFormat != PixelFormat::Unknown);
+            assert(extent.width > 0 && extent.height > 0 && pixelFormat != PixelFormat::Unknown);
 
             if (numMipLevels <= 0)
-                numMipLevels = calcMipLevels(glm::max(extent.Width, extent.Height));
+                numMipLevels = calcMipLevels(glm::max(extent.width, extent.height));
 
-            return CreateImmutableTexture(extent, 0, pixelFormat, 1, numMipLevels, numLayers);
+            return createImmutableTexture(extent, 0, pixelFormat, 1, numMipLevels, numLayers);
         }
 
-        Texture RenderContext::CreateTexture3D(Extent2D extent, uint32_t depth, PixelFormat pixelFormat)
+        Texture RenderContext::createTexture3D(Extent2D extent, uint32_t depth, PixelFormat pixelFormat)
         {
-            return CreateImmutableTexture(extent, depth, pixelFormat, 1, 1, 0);
+            return createImmutableTexture(extent, depth, pixelFormat, 1, 1, 0);
         }
 
         Texture
-        RenderContext::CreateCubemap(uint32_t size, PixelFormat pixelFormat, uint32_t numMipLevels, uint32_t numLayers)
+        RenderContext::createCubemap(uint32_t size, PixelFormat pixelFormat, uint32_t numMipLevels, uint32_t numLayers)
         {
             assert(size > 0 && pixelFormat != PixelFormat::Unknown);
 
             if (numMipLevels <= 0)
                 numMipLevels = calcMipLevels(size);
 
-            return CreateImmutableTexture({size, size}, 0, pixelFormat, 6, numMipLevels, numLayers);
+            return createImmutableTexture({size, size}, 0, pixelFormat, 6, numMipLevels, numLayers);
         }
 
-        RenderContext& RenderContext::GenerateMipmaps(Texture& texture)
+        RenderContext& RenderContext::generateMipmaps(Texture& texture)
         {
             assert(texture);
             glGenerateTextureMipmap(texture.m_Id);
@@ -1862,57 +1864,57 @@ namespace vgfw
             return *this;
         }
 
-        RenderContext& RenderContext::SetupSampler(Texture& texture, const SamplerInfo& samplerInfo)
+        RenderContext& RenderContext::setupSampler(Texture& texture, const SamplerInfo& samplerInfo)
         {
             assert(texture);
 
             glTextureParameteri(texture.m_Id,
                                 GL_TEXTURE_MIN_FILTER,
-                                selectTextureMinFilter(samplerInfo.MinFilter, samplerInfo.MipmapMode));
-            glTextureParameteri(texture.m_Id, GL_TEXTURE_MAG_FILTER, static_cast<GLenum>(samplerInfo.MagFilter));
-            glTextureParameteri(texture.m_Id, GL_TEXTURE_WRAP_S, static_cast<GLenum>(samplerInfo.AddressModeS));
-            glTextureParameteri(texture.m_Id, GL_TEXTURE_WRAP_T, static_cast<GLenum>(samplerInfo.AddressModeT));
-            glTextureParameteri(texture.m_Id, GL_TEXTURE_WRAP_R, static_cast<GLenum>(samplerInfo.AddressModeR));
+                                selectTextureMinFilter(samplerInfo.minFilter, samplerInfo.mipmapMode));
+            glTextureParameteri(texture.m_Id, GL_TEXTURE_MAG_FILTER, static_cast<GLenum>(samplerInfo.magFilter));
+            glTextureParameteri(texture.m_Id, GL_TEXTURE_WRAP_S, static_cast<GLenum>(samplerInfo.addressModeS));
+            glTextureParameteri(texture.m_Id, GL_TEXTURE_WRAP_T, static_cast<GLenum>(samplerInfo.addressModeT));
+            glTextureParameteri(texture.m_Id, GL_TEXTURE_WRAP_R, static_cast<GLenum>(samplerInfo.addressModeR));
 
-            glTextureParameterf(texture.m_Id, GL_TEXTURE_MAX_ANISOTROPY, samplerInfo.MaxAnisotropy);
+            glTextureParameterf(texture.m_Id, GL_TEXTURE_MAX_ANISOTROPY, samplerInfo.maxAnisotropy);
 
-            if (samplerInfo.CompareOperator.has_value())
+            if (samplerInfo.compareOperator.has_value())
             {
                 glTextureParameteri(texture.m_Id, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
                 glTextureParameteri(
-                    texture.m_Id, GL_TEXTURE_COMPARE_FUNC, static_cast<GLenum>(*samplerInfo.CompareOperator));
+                    texture.m_Id, GL_TEXTURE_COMPARE_FUNC, static_cast<GLenum>(*samplerInfo.compareOperator));
             }
-            glTextureParameterfv(texture.m_Id, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(samplerInfo.BorderColor));
+            glTextureParameterfv(texture.m_Id, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(samplerInfo.borderColor));
 
             return *this;
         }
 
-        GLuint RenderContext::CreateSampler(const SamplerInfo& samplerInfo)
+        GLuint RenderContext::createSampler(const SamplerInfo& samplerInfo)
         {
             GLuint sampler {GL_NONE};
             glCreateSamplers(1, &sampler);
 
             glSamplerParameteri(
-                sampler, GL_TEXTURE_MIN_FILTER, selectTextureMinFilter(samplerInfo.MinFilter, samplerInfo.MipmapMode));
-            glSamplerParameteri(sampler, GL_TEXTURE_MAG_FILTER, static_cast<GLenum>(samplerInfo.MagFilter));
-            glSamplerParameteri(sampler, GL_TEXTURE_WRAP_S, static_cast<GLenum>(samplerInfo.AddressModeS));
-            glSamplerParameteri(sampler, GL_TEXTURE_WRAP_T, static_cast<GLenum>(samplerInfo.AddressModeT));
-            glSamplerParameteri(sampler, GL_TEXTURE_WRAP_R, static_cast<GLenum>(samplerInfo.AddressModeR));
+                sampler, GL_TEXTURE_MIN_FILTER, selectTextureMinFilter(samplerInfo.minFilter, samplerInfo.mipmapMode));
+            glSamplerParameteri(sampler, GL_TEXTURE_MAG_FILTER, static_cast<GLenum>(samplerInfo.magFilter));
+            glSamplerParameteri(sampler, GL_TEXTURE_WRAP_S, static_cast<GLenum>(samplerInfo.addressModeS));
+            glSamplerParameteri(sampler, GL_TEXTURE_WRAP_T, static_cast<GLenum>(samplerInfo.addressModeT));
+            glSamplerParameteri(sampler, GL_TEXTURE_WRAP_R, static_cast<GLenum>(samplerInfo.addressModeR));
 
-            glSamplerParameterf(sampler, GL_TEXTURE_MAX_ANISOTROPY, samplerInfo.MaxAnisotropy);
+            glSamplerParameterf(sampler, GL_TEXTURE_MAX_ANISOTROPY, samplerInfo.maxAnisotropy);
 
-            if (samplerInfo.CompareOperator.has_value())
+            if (samplerInfo.compareOperator.has_value())
             {
                 glSamplerParameteri(sampler, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
                 glSamplerParameteri(
-                    sampler, GL_TEXTURE_COMPARE_FUNC, static_cast<GLenum>(*samplerInfo.CompareOperator));
+                    sampler, GL_TEXTURE_COMPARE_FUNC, static_cast<GLenum>(*samplerInfo.compareOperator));
             }
-            glSamplerParameterfv(sampler, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(samplerInfo.BorderColor));
+            glSamplerParameterfv(sampler, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(samplerInfo.borderColor));
 
             return sampler;
         }
 
-        RenderContext& RenderContext::Clear(Texture& texture)
+        RenderContext& RenderContext::clear(Texture& texture)
         {
             assert(texture);
             uint8_t v {0};
@@ -1922,38 +1924,38 @@ namespace vgfw
         }
 
         RenderContext&
-        RenderContext::Upload(Texture& texture, GLint mipLevel, glm::uvec2 dimensions, const ImageData& image)
+        RenderContext::upload(Texture& texture, GLint mipLevel, glm::uvec2 dimensions, const ImageData& image)
         {
-            return Upload(texture, mipLevel, {dimensions, 0}, 0, 0, image);
+            return upload(texture, mipLevel, {dimensions, 0}, 0, 0, image);
         }
 
-        RenderContext& RenderContext::Upload(Texture&         texture,
+        RenderContext& RenderContext::upload(Texture&         texture,
                                              GLint            mipLevel,
                                              GLint            face,
                                              glm::uvec2       dimensions,
                                              const ImageData& image)
         {
-            return Upload(texture, mipLevel, {dimensions, 0}, face, 0, image);
+            return upload(texture, mipLevel, {dimensions, 0}, face, 0, image);
         }
 
-        RenderContext& RenderContext::Upload(Texture&          texture,
+        RenderContext& RenderContext::upload(Texture&          texture,
                                              GLint             mipLevel,
                                              const glm::uvec3& dimensions,
                                              GLint             face,
                                              GLsizei           layer,
                                              const ImageData&  image)
         {
-            assert(texture && image.Pixels != nullptr);
+            assert(texture && image.pixels != nullptr);
 
             switch (texture.m_Type)
             {
                 case GL_TEXTURE_1D:
                     glTextureSubImage1D(
-                        texture.m_Id, mipLevel, 0, dimensions.x, image.Format, image.DataType, image.Pixels);
+                        texture.m_Id, mipLevel, 0, dimensions.x, image.format, image.dataType, image.pixels);
                     break;
                 case GL_TEXTURE_1D_ARRAY:
                     glTextureSubImage2D(
-                        texture.m_Id, mipLevel, 0, 0, dimensions.x, layer, image.Format, image.DataType, image.Pixels);
+                        texture.m_Id, mipLevel, 0, 0, dimensions.x, layer, image.format, image.dataType, image.pixels);
                     break;
                 case GL_TEXTURE_2D:
                     glTextureSubImage2D(texture.m_Id,
@@ -1962,9 +1964,9 @@ namespace vgfw
                                         0,
                                         dimensions.x,
                                         dimensions.y,
-                                        image.Format,
-                                        image.DataType,
-                                        image.Pixels);
+                                        image.format,
+                                        image.dataType,
+                                        image.pixels);
                     break;
                 case GL_TEXTURE_2D_ARRAY:
                     glTextureSubImage3D(texture.m_Id,
@@ -1975,9 +1977,9 @@ namespace vgfw
                                         dimensions.x,
                                         dimensions.y,
                                         1,
-                                        image.Format,
-                                        image.DataType,
-                                        image.Pixels);
+                                        image.format,
+                                        image.dataType,
+                                        image.pixels);
                     break;
                 case GL_TEXTURE_3D:
                     glTextureSubImage3D(texture.m_Id,
@@ -1988,9 +1990,9 @@ namespace vgfw
                                         dimensions.x,
                                         dimensions.y,
                                         dimensions.z,
-                                        image.Format,
-                                        image.DataType,
-                                        image.Pixels);
+                                        image.format,
+                                        image.dataType,
+                                        image.pixels);
                     break;
                 case GL_TEXTURE_CUBE_MAP:
                     glTextureSubImage3D(texture.m_Id,
@@ -2001,9 +2003,9 @@ namespace vgfw
                                         dimensions.x,
                                         dimensions.y,
                                         1,
-                                        image.Format,
-                                        image.DataType,
-                                        image.Pixels);
+                                        image.format,
+                                        image.dataType,
+                                        image.pixels);
                     break;
                 case GL_TEXTURE_CUBE_MAP_ARRAY: {
                     const auto zoffset = (layer * 6) + face; // desired layer-face
@@ -2016,9 +2018,9 @@ namespace vgfw
                                         dimensions.x,
                                         dimensions.y,
                                         6 * texture.m_NumLayers,
-                                        image.Format,
-                                        image.DataType,
-                                        image.Pixels);
+                                        image.format,
+                                        image.dataType,
+                                        image.pixels);
                 }
                 break;
 
@@ -2028,7 +2030,7 @@ namespace vgfw
             return *this;
         }
 
-        RenderContext& RenderContext::Clear(Buffer& buffer)
+        RenderContext& RenderContext::clear(Buffer& buffer)
         {
             assert(buffer);
 
@@ -2038,7 +2040,7 @@ namespace vgfw
             return *this;
         }
 
-        RenderContext& RenderContext::Upload(Buffer& buffer, GLintptr offset, GLsizeiptr size, const void* data)
+        RenderContext& RenderContext::upload(Buffer& buffer, GLintptr offset, GLsizeiptr size, const void* data)
         {
             assert(buffer);
 
@@ -2048,21 +2050,21 @@ namespace vgfw
             return *this;
         }
 
-        void* RenderContext::Map(Buffer& buffer)
+        void* RenderContext::map(Buffer& buffer)
         {
             assert(buffer);
 
-            if (!buffer.IsMapped())
+            if (!buffer.isMapped())
                 buffer.m_MappedMemory = glMapNamedBuffer(buffer.m_Id, GL_WRITE_ONLY);
 
             return buffer.m_MappedMemory;
         }
 
-        RenderContext& RenderContext::Unmap(Buffer& buffer)
+        RenderContext& RenderContext::unmap(Buffer& buffer)
         {
             assert(buffer);
 
-            if (buffer.IsMapped())
+            if (buffer.isMapped())
             {
                 glUnmapNamedBuffer(buffer.m_Id);
                 buffer.m_MappedMemory = nullptr;
@@ -2071,7 +2073,7 @@ namespace vgfw
             return *this;
         }
 
-        RenderContext& RenderContext::Destroy(Buffer& buffer)
+        RenderContext& RenderContext::destroy(Buffer& buffer)
         {
             if (buffer)
             {
@@ -2082,7 +2084,7 @@ namespace vgfw
             return *this;
         }
 
-        RenderContext& RenderContext::Destroy(Texture& texture)
+        RenderContext& RenderContext::destroy(Texture& texture)
         {
             if (texture)
             {
@@ -2094,7 +2096,7 @@ namespace vgfw
             return *this;
         }
 
-        RenderContext& RenderContext::Destroy(GraphicsPipeline& gp)
+        RenderContext& RenderContext::destroy(GraphicsPipeline& gp)
         {
             if (gp.m_Program != GL_NONE)
             {
@@ -2106,29 +2108,29 @@ namespace vgfw
             return *this;
         }
 
-        RenderContext& RenderContext::Dispatch(GLuint computeProgram, const glm::uvec3& numGroups)
+        RenderContext& RenderContext::dispatch(GLuint computeProgram, const glm::uvec3& numGroups)
         {
-            SetShaderProgram(computeProgram);
+            setShaderProgram(computeProgram);
             glDispatchCompute(numGroups.x, numGroups.y, numGroups.z);
 
             return *this;
         }
 
-        GLuint RenderContext::BeginRendering(const RenderingInfo& renderingInfo)
+        GLuint RenderContext::beginRendering(const RenderingInfo& renderingInfo)
         {
             assert(!m_RenderingStarted);
 
             GLuint framebuffer;
             glCreateFramebuffers(1, &framebuffer);
-            if (renderingInfo.DepthAttachment.has_value())
+            if (renderingInfo.depthAttachment.has_value())
             {
-                AttachTexture(framebuffer, GL_DEPTH_ATTACHMENT, *renderingInfo.DepthAttachment);
+                attachTexture(framebuffer, GL_DEPTH_ATTACHMENT, *renderingInfo.depthAttachment);
             }
-            for (size_t i {0}; i < renderingInfo.ColorAttachments.size(); ++i)
+            for (size_t i {0}; i < renderingInfo.colorAttachments.size(); ++i)
             {
-                AttachTexture(framebuffer, GL_COLOR_ATTACHMENT0 + i, renderingInfo.ColorAttachments[i]);
+                attachTexture(framebuffer, GL_COLOR_ATTACHMENT0 + i, renderingInfo.colorAttachments[i]);
             }
-            if (const auto n = renderingInfo.ColorAttachments.size(); n > 0)
+            if (const auto n = renderingInfo.colorAttachments.size(); n > 0)
             {
                 std::vector<GLenum> colorBuffers(n);
                 std::iota(colorBuffers.begin(), colorBuffers.end(), GL_COLOR_ATTACHMENT0);
@@ -2140,22 +2142,22 @@ namespace vgfw
 #endif
 
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer);
-            SetViewport(renderingInfo.Area);
-            SetScissorTest(false);
+            setViewport(renderingInfo.area);
+            setScissorTest(false);
 
-            if (renderingInfo.DepthAttachment.has_value())
-                if (renderingInfo.DepthAttachment->ClearValue.has_value())
+            if (renderingInfo.depthAttachment.has_value())
+                if (renderingInfo.depthAttachment->clearValue.has_value())
                 {
-                    SetDepthWrite(true);
+                    setDepthWrite(true);
 
-                    const auto clearValue = std::get<float>(*renderingInfo.DepthAttachment->ClearValue);
+                    const auto clearValue = std::get<float>(*renderingInfo.depthAttachment->clearValue);
                     glClearNamedFramebufferfv(framebuffer, GL_DEPTH, 0, &clearValue);
                 }
-            for (int32_t i {0}; const auto& attachment : renderingInfo.ColorAttachments)
+            for (int32_t i {0}; const auto& attachment : renderingInfo.colorAttachments)
             {
-                if (attachment.ClearValue.has_value())
+                if (attachment.clearValue.has_value())
                 {
-                    const auto& clearValue = std::get<glm::vec4>(*attachment.ClearValue);
+                    const auto& clearValue = std::get<glm::vec4>(*attachment.clearValue);
                     glClearNamedFramebufferfv(framebuffer, GL_COLOR, i, glm::value_ptr(clearValue));
                 }
                 ++i;
@@ -2166,18 +2168,18 @@ namespace vgfw
             return framebuffer;
         }
 
-        RenderContext& RenderContext::BeginRendering(const Rect2D&            area,
+        RenderContext& RenderContext::beginRendering(const Rect2D&            area,
                                                      std::optional<glm::vec4> clearColor,
                                                      std::optional<float>     clearDepth,
                                                      std::optional<int>       clearStencil)
         {
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, GL_NONE);
-            SetViewport(area);
-            SetScissorTest(false);
+            setViewport(area);
+            setScissorTest(false);
 
             if (clearDepth.has_value())
             {
-                SetDepthWrite(true);
+                setDepthWrite(true);
                 glClearNamedFramebufferfv(GL_NONE, GL_DEPTH, 0, &clearDepth.value());
             }
             if (clearStencil.has_value())
@@ -2190,7 +2192,7 @@ namespace vgfw
             return *this;
         }
 
-        RenderContext& RenderContext::EndRendering(GLuint frameBufferID)
+        RenderContext& RenderContext::endRendering(GLuint frameBufferID)
         {
             assert(m_RenderingStarted && frameBufferID != GL_NONE);
 
@@ -2200,33 +2202,33 @@ namespace vgfw
             return *this;
         }
 
-        RenderContext& RenderContext::BindGraphicsPipeline(const GraphicsPipeline& gp)
+        RenderContext& RenderContext::bindGraphicsPipeline(const GraphicsPipeline& gp)
         {
             {
                 const auto& state = gp.m_DepthStencilState;
-                SetDepthTest(state.DepthTest, state.DepthCompareOp);
-                SetDepthWrite(state.DepthWrite);
+                setDepthTest(state.depthTest, state.depthCompareOp);
+                setDepthWrite(state.depthWrite);
             }
 
             {
                 const auto& state = gp.m_RasterizerState;
-                SetPolygonMode(state.PolygonMode);
-                SetCullMode(state.CullMode);
-                SetPolygonOffset(state.PolygonOffset);
-                SetDepthClamp(state.DepthClampEnable);
-                SetScissorTest(state.ScissorTest);
+                setPolygonMode(state.polygonMode);
+                setCullMode(state.cullMode);
+                setPolygonOffset(state.polygonOffset);
+                setDepthClamp(state.depthClampEnable);
+                setScissorTest(state.scissorTest);
             }
 
             for (int32_t i {0}; i < gp.m_BlendStates.size(); ++i)
-                SetBlendState(i, gp.m_BlendStates[i]);
+                setBlendState(i, gp.m_BlendStates[i]);
 
-            SetVertexArray(gp.m_VAO);
-            SetShaderProgram(gp.m_Program);
+            setVertexArray(gp.m_VAO);
+            setShaderProgram(gp.m_Program);
 
             return *this;
         }
 
-        RenderContext& RenderContext::SetUniform1f(const std::string& name, float f)
+        RenderContext& RenderContext::setUniform1f(const std::string& name, float f)
         {
             const auto location = glGetUniformLocation(m_CurrentPipeline.m_Program, name.data());
             if (location != GL_INVALID_INDEX)
@@ -2234,7 +2236,7 @@ namespace vgfw
             return *this;
         }
 
-        RenderContext& RenderContext::SetUniform1i(const std::string& name, int32_t i)
+        RenderContext& RenderContext::setUniform1i(const std::string& name, int32_t i)
         {
             const auto location = glGetUniformLocation(m_CurrentPipeline.m_Program, name.data());
             if (location != GL_INVALID_INDEX)
@@ -2242,7 +2244,7 @@ namespace vgfw
             return *this;
         }
 
-        RenderContext& RenderContext::SetUniform1ui(const std::string& name, uint32_t i)
+        RenderContext& RenderContext::setUniform1ui(const std::string& name, uint32_t i)
         {
             const auto location = glGetUniformLocation(m_CurrentPipeline.m_Program, name.data());
             if (location != GL_INVALID_INDEX)
@@ -2250,7 +2252,7 @@ namespace vgfw
             return *this;
         }
 
-        RenderContext& RenderContext::SetUniformVec3(const std::string& name, const glm::vec3& v)
+        RenderContext& RenderContext::setUniformVec3(const std::string& name, const glm::vec3& v)
         {
             const auto location = glGetUniformLocation(m_CurrentPipeline.m_Program, name.data());
             if (location != GL_INVALID_INDEX)
@@ -2260,7 +2262,7 @@ namespace vgfw
             return *this;
         }
 
-        RenderContext& RenderContext::SetUniformVec4(const std::string& name, const glm::vec4& v)
+        RenderContext& RenderContext::setUniformVec4(const std::string& name, const glm::vec4& v)
         {
             const auto location = glGetUniformLocation(m_CurrentPipeline.m_Program, name.data());
             if (location != GL_INVALID_INDEX)
@@ -2270,7 +2272,7 @@ namespace vgfw
             return *this;
         }
 
-        RenderContext& RenderContext::SetUniformMat3(const std::string& name, const glm::mat3& m)
+        RenderContext& RenderContext::setUniformMat3(const std::string& name, const glm::mat3& m)
         {
             const auto location = glGetUniformLocation(m_CurrentPipeline.m_Program, name.data());
             if (location != GL_INVALID_INDEX)
@@ -2280,7 +2282,7 @@ namespace vgfw
             return *this;
         }
 
-        RenderContext& RenderContext::SetUniformMat4(const std::string& name, const glm::mat4& m)
+        RenderContext& RenderContext::setUniformMat4(const std::string& name, const glm::mat4& m)
         {
             const auto location = glGetUniformLocation(m_CurrentPipeline.m_Program, name.data());
             if (location != GL_INVALID_INDEX)
@@ -2290,7 +2292,7 @@ namespace vgfw
             return *this;
         }
 
-        RenderContext& RenderContext::BindImage(GLuint unit, const Texture& texture, GLint mipLevel, GLenum access)
+        RenderContext& RenderContext::bindImage(GLuint unit, const Texture& texture, GLint mipLevel, GLenum access)
         {
             assert(texture && mipLevel < texture.m_NumMipLevels);
             glBindImageTexture(
@@ -2298,7 +2300,7 @@ namespace vgfw
             return *this;
         }
 
-        RenderContext& RenderContext::BindTexture(GLuint unit, const Texture& texture, std::optional<GLuint> samplerId)
+        RenderContext& RenderContext::bindTexture(GLuint unit, const Texture& texture, std::optional<GLuint> samplerId)
         {
             assert(texture);
             glBindTextureUnit(unit, texture.m_Id);
@@ -2307,30 +2309,30 @@ namespace vgfw
             return *this;
         }
 
-        RenderContext& RenderContext::BindUniformBuffer(GLuint index, const UniformBuffer& buffer)
+        RenderContext& RenderContext::bindUniformBuffer(GLuint index, const UniformBuffer& buffer)
         {
             assert(buffer);
             glBindBufferBase(GL_UNIFORM_BUFFER, index, buffer.m_Id);
             return *this;
         }
 
-        RenderContext& RenderContext::DrawFullScreenTriangle() { return Draw({}, {}, 0, 3); }
+        RenderContext& RenderContext::drawFullScreenTriangle() { return draw({}, {}, 0, 3); }
 
-        RenderContext& RenderContext::DrawCube() { return Draw({}, {}, 0, 36); }
+        RenderContext& RenderContext::drawCube() { return draw({}, {}, 0, 36); }
 
-        RenderContext& RenderContext::Draw(OptionalReference<const VertexBuffer> vertexBuffer,
+        RenderContext& RenderContext::draw(OptionalReference<const VertexBuffer> vertexBuffer,
                                            OptionalReference<const IndexBuffer>  indexBuffer,
                                            uint32_t                              numIndices,
                                            uint32_t                              numVertices,
                                            uint32_t                              numInstances)
         {
             if (vertexBuffer.has_value())
-                SetVertexBuffer(*vertexBuffer);
+                setVertexBuffer(*vertexBuffer);
 
             if (numIndices > 0)
             {
                 assert(indexBuffer.has_value());
-                SetIndexBuffer(*indexBuffer);
+                setIndexBuffer(*indexBuffer);
                 glDrawElementsInstanced(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT, nullptr, numInstances);
             }
             else
@@ -2340,31 +2342,31 @@ namespace vgfw
             return *this;
         }
 
-        GLuint RenderContext::CreateVertexArray(const VertexAttributes& attributes)
+        GLuint RenderContext::createVertexArray(const VertexAttributes& attributes)
         {
             GLuint vao;
             glCreateVertexArrays(1, &vao);
 
             for (const auto& [location, attribute] : attributes)
             {
-                const auto [type, size, normalized] = statAttribute(attribute.VertType);
+                const auto [type, size, normalized] = statAttribute(attribute.vertType);
                 assert(type != GL_INVALID_INDEX);
 
                 glEnableVertexArrayAttrib(vao, location);
-                if (attribute.VertType == VertexAttribute::Type::Int4)
+                if (attribute.vertType == VertexAttribute::Type::Int4)
                 {
-                    glVertexArrayAttribIFormat(vao, location, size, type, attribute.Offset);
+                    glVertexArrayAttribIFormat(vao, location, size, type, attribute.offset);
                 }
                 else
                 {
-                    glVertexArrayAttribFormat(vao, location, size, type, normalized, attribute.Offset);
+                    glVertexArrayAttribFormat(vao, location, size, type, normalized, attribute.offset);
                 }
                 glVertexArrayAttribBinding(vao, location, 0);
             }
             return vao;
         }
 
-        Texture RenderContext::CreateImmutableTexture(Extent2D    extent,
+        Texture RenderContext::createImmutableTexture(Extent2D    extent,
                                                       uint32_t    depth,
                                                       PixelFormat pixelFormat,
                                                       uint32_t    numFaces,
@@ -2377,9 +2379,9 @@ namespace vgfw
 
             GLenum target = numFaces == 6     ? GL_TEXTURE_CUBE_MAP :
                             depth > 0         ? GL_TEXTURE_3D :
-                            extent.Height > 0 ? GL_TEXTURE_2D :
+                            extent.height > 0 ? GL_TEXTURE_2D :
                                                 GL_TEXTURE_1D;
-            assert(target == GL_TEXTURE_CUBE_MAP ? extent.Width == extent.Height : true);
+            assert(target == GL_TEXTURE_CUBE_MAP ? extent.width == extent.height : true);
 
             if (numLayers > 0)
             {
@@ -2407,28 +2409,28 @@ namespace vgfw
             switch (target)
             {
                 case GL_TEXTURE_1D:
-                    glTextureStorage1D(id, numMipLevels, internalFormat, extent.Width);
+                    glTextureStorage1D(id, numMipLevels, internalFormat, extent.width);
                     break;
                 case GL_TEXTURE_1D_ARRAY:
-                    glTextureStorage2D(id, numMipLevels, internalFormat, extent.Width, numLayers);
+                    glTextureStorage2D(id, numMipLevels, internalFormat, extent.width, numLayers);
                     break;
 
                 case GL_TEXTURE_2D:
-                    glTextureStorage2D(id, numMipLevels, internalFormat, extent.Width, extent.Height);
+                    glTextureStorage2D(id, numMipLevels, internalFormat, extent.width, extent.height);
                     break;
                 case GL_TEXTURE_2D_ARRAY:
-                    glTextureStorage3D(id, numMipLevels, internalFormat, extent.Width, extent.Height, numLayers);
+                    glTextureStorage3D(id, numMipLevels, internalFormat, extent.width, extent.height, numLayers);
                     break;
 
                 case GL_TEXTURE_3D:
-                    glTextureStorage3D(id, numMipLevels, internalFormat, extent.Width, extent.Height, depth);
+                    glTextureStorage3D(id, numMipLevels, internalFormat, extent.width, extent.height, depth);
                     break;
 
                 case GL_TEXTURE_CUBE_MAP:
-                    glTextureStorage2D(id, numMipLevels, internalFormat, extent.Width, extent.Height);
+                    glTextureStorage2D(id, numMipLevels, internalFormat, extent.width, extent.height);
                     break;
                 case GL_TEXTURE_CUBE_MAP_ARRAY:
-                    glTextureStorage3D(id, numMipLevels, internalFormat, extent.Width, extent.Height, numLayers * 6);
+                    glTextureStorage3D(id, numMipLevels, internalFormat, extent.width, extent.height, numLayers * 6);
                     break;
             }
 
@@ -2443,7 +2445,7 @@ namespace vgfw
             };
         }
 
-        void RenderContext::CreateFaceView(Texture& cubeMap, GLuint mipLevel, GLuint layer, GLuint face)
+        void RenderContext::createFaceView(Texture& cubeMap, GLuint mipLevel, GLuint layer, GLuint face)
         {
             assert(cubeMap.m_Type == GL_TEXTURE_CUBE_MAP || cubeMap.m_Type == GL_TEXTURE_CUBE_MAP_ARRAY);
 
@@ -2461,7 +2463,7 @@ namespace vgfw
                           1);
         }
 
-        void RenderContext::AttachTexture(GLuint framebuffer, GLenum attachment, const AttachmentInfo& info)
+        void RenderContext::attachTexture(GLuint framebuffer, GLenum attachment, const AttachmentInfo& info)
         {
             const auto& [image, mipLevel, maybeLayer, maybeFace, _] = info;
 
@@ -2469,7 +2471,7 @@ namespace vgfw
             {
                 case GL_TEXTURE_CUBE_MAP:
                 case GL_TEXTURE_CUBE_MAP_ARRAY:
-                    CreateFaceView(image, mipLevel, maybeLayer.value_or(0), maybeFace.value_or(0));
+                    createFaceView(image, mipLevel, maybeLayer.value_or(0), maybeFace.value_or(0));
                     glNamedFramebufferTexture(framebuffer, attachment, image.m_View, 0);
                     break;
 
@@ -2492,7 +2494,7 @@ namespace vgfw
             }
         }
 
-        GLuint RenderContext::CreateShaderProgram(std::initializer_list<GLuint> shaders)
+        GLuint RenderContext::createShaderProgram(std::initializer_list<GLuint> shaders)
         {
             const auto program = glCreateProgram();
 
@@ -2525,7 +2527,7 @@ namespace vgfw
             return program;
         }
 
-        GLuint RenderContext::CreateShaderObject(GLenum type, const std::string& shaderSource)
+        GLuint RenderContext::createShaderObject(GLenum type, const std::string& shaderSource)
         {
             auto          id = glCreateShader(type);
             const GLchar* strings {shaderSource.data()};
@@ -2549,7 +2551,7 @@ namespace vgfw
             return id;
         }
 
-        void RenderContext::SetShaderProgram(GLuint program)
+        void RenderContext::setShaderProgram(GLuint program)
         {
             assert(program != GL_NONE);
             if (auto& current = m_CurrentPipeline.m_Program; current != program)
@@ -2559,7 +2561,7 @@ namespace vgfw
             }
         }
 
-        void RenderContext::SetVertexArray(GLuint vao)
+        void RenderContext::setVertexArray(GLuint vao)
         {
             if (GL_NONE == vao)
                 vao = m_DummyVAO;
@@ -2571,48 +2573,48 @@ namespace vgfw
             }
         }
 
-        void RenderContext::SetVertexBuffer(const VertexBuffer& vertexBuffer) const
+        void RenderContext::setVertexBuffer(const VertexBuffer& vertexBuffer) const
         {
             const auto vao = m_CurrentPipeline.m_VAO;
             assert(vertexBuffer && vao != GL_NONE);
-            glVertexArrayVertexBuffer(vao, 0, vertexBuffer.m_Id, 0, vertexBuffer.GetStride());
+            glVertexArrayVertexBuffer(vao, 0, vertexBuffer.m_Id, 0, vertexBuffer.getStride());
         }
 
-        void RenderContext::SetIndexBuffer(const IndexBuffer& indexBuffer) const
+        void RenderContext::setIndexBuffer(const IndexBuffer& indexBuffer) const
         {
             const auto vao = m_CurrentPipeline.m_VAO;
             assert(indexBuffer && vao != GL_NONE);
             glVertexArrayElementBuffer(vao, indexBuffer.m_Id);
         }
 
-        void RenderContext::SetDepthTest(bool enabled, CompareOp depthFunc)
+        void RenderContext::setDepthTest(bool enabled, CompareOp depthFunc)
         {
             auto& current = m_CurrentPipeline.m_DepthStencilState;
-            if (enabled != current.DepthTest)
+            if (enabled != current.depthTest)
             {
                 enabled ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);
-                current.DepthTest = enabled;
+                current.depthTest = enabled;
             }
-            if (enabled && depthFunc != current.DepthCompareOp)
+            if (enabled && depthFunc != current.depthCompareOp)
             {
                 glDepthFunc(static_cast<GLenum>(depthFunc));
-                current.DepthCompareOp = depthFunc;
+                current.depthCompareOp = depthFunc;
             }
         }
 
-        void RenderContext::SetDepthWrite(bool enabled)
+        void RenderContext::setDepthWrite(bool enabled)
         {
             auto& current = m_CurrentPipeline.m_DepthStencilState;
-            if (enabled != current.DepthWrite)
+            if (enabled != current.depthWrite)
             {
                 glDepthMask(enabled);
-                current.DepthWrite = enabled;
+                current.depthWrite = enabled;
             }
         }
 
-        void RenderContext::SetPolygonMode(PolygonMode polygonMode)
+        void RenderContext::setPolygonMode(PolygonMode polygonMode)
         {
-            auto& current = m_CurrentPipeline.m_RasterizerState.PolygonMode;
+            auto& current = m_CurrentPipeline.m_RasterizerState.polygonMode;
             if (polygonMode != current)
             {
                 glPolygonMode(GL_FRONT_AND_BACK, static_cast<GLenum>(polygonMode));
@@ -2620,28 +2622,28 @@ namespace vgfw
             }
         }
 
-        void RenderContext::SetPolygonOffset(std::optional<PolygonOffset> polygonOffset)
+        void RenderContext::setPolygonOffset(std::optional<PolygonOffset> polygonOffset)
         {
             auto& current = m_CurrentPipeline.m_RasterizerState;
-            if (polygonOffset != current.PolygonOffset)
+            if (polygonOffset != current.polygonOffset)
             {
-                const auto offsetCap = getPolygonOffsetCap(current.PolygonMode);
+                const auto offsetCap = getPolygonOffsetCap(current.polygonMode);
                 if (polygonOffset.has_value())
                 {
                     glEnable(offsetCap);
-                    glPolygonOffset(polygonOffset->Factor, polygonOffset->Units);
+                    glPolygonOffset(polygonOffset->factor, polygonOffset->units);
                 }
                 else
                 {
                     glDisable(offsetCap);
                 }
-                current.PolygonOffset = polygonOffset;
+                current.polygonOffset = polygonOffset;
             }
         }
 
-        void RenderContext::SetCullMode(CullMode cullMode)
+        void RenderContext::setCullMode(CullMode cullMode)
         {
-            auto& current = m_CurrentPipeline.m_RasterizerState.CullMode;
+            auto& current = m_CurrentPipeline.m_RasterizerState.cullMode;
             if (cullMode != current)
             {
                 if (cullMode != CullMode::None)
@@ -2658,9 +2660,9 @@ namespace vgfw
             }
         }
 
-        void RenderContext::SetDepthClamp(bool enabled)
+        void RenderContext::setDepthClamp(bool enabled)
         {
-            auto& current = m_CurrentPipeline.m_RasterizerState.DepthClampEnable;
+            auto& current = m_CurrentPipeline.m_RasterizerState.depthClampEnable;
             if (enabled != current)
             {
                 enabled ? glEnable(GL_DEPTH_CLAMP) : glDisable(GL_DEPTH_CLAMP);
@@ -2668,9 +2670,9 @@ namespace vgfw
             }
         }
 
-        void RenderContext::SetScissorTest(bool enabled)
+        void RenderContext::setScissorTest(bool enabled)
         {
-            auto& current = m_CurrentPipeline.m_RasterizerState.ScissorTest;
+            auto& current = m_CurrentPipeline.m_RasterizerState.scissorTest;
             if (enabled != current)
             {
                 enabled ? glEnable(GL_SCISSOR_TEST) : glDisable(GL_SCISSOR_TEST);
@@ -2678,39 +2680,39 @@ namespace vgfw
             }
         }
 
-        void RenderContext::SetBlendState(GLuint index, const BlendState& state)
+        void RenderContext::setBlendState(GLuint index, const BlendState& state)
         {
             auto& current = m_CurrentPipeline.m_BlendStates[index];
             if (state != current)
             {
-                if (state.Enabled != current.Enabled)
+                if (state.enabled != current.enabled)
                 {
-                    state.Enabled ? glEnablei(GL_BLEND, index) : glDisablei(GL_BLEND, index);
-                    current.Enabled = state.Enabled;
+                    state.enabled ? glEnablei(GL_BLEND, index) : glDisablei(GL_BLEND, index);
+                    current.enabled = state.enabled;
                 }
-                if (state.Enabled)
+                if (state.enabled)
                 {
-                    if (state.ColorOp != current.ColorOp || state.AlphaOp != current.AlphaOp)
+                    if (state.colorOp != current.colorOp || state.alphaOp != current.alphaOp)
                     {
                         glBlendEquationSeparatei(
-                            index, static_cast<GLenum>(state.ColorOp), static_cast<GLenum>(state.AlphaOp));
+                            index, static_cast<GLenum>(state.colorOp), static_cast<GLenum>(state.alphaOp));
 
-                        current.ColorOp = state.ColorOp;
-                        current.AlphaOp = state.AlphaOp;
+                        current.colorOp = state.colorOp;
+                        current.alphaOp = state.alphaOp;
                     }
-                    if (state.SrcColor != current.SrcColor || state.DestColor != current.DestColor ||
-                        state.SrcAlpha != current.SrcAlpha || state.DestAlpha != current.DestAlpha)
+                    if (state.srcColor != current.srcColor || state.destColor != current.destColor ||
+                        state.srcAlpha != current.srcAlpha || state.destAlpha != current.destAlpha)
                     {
                         glBlendFuncSeparatei(index,
-                                             static_cast<GLenum>(state.SrcColor),
-                                             static_cast<GLenum>(state.DestColor),
-                                             static_cast<GLenum>(state.SrcAlpha),
-                                             static_cast<GLenum>(state.DestAlpha));
+                                             static_cast<GLenum>(state.srcColor),
+                                             static_cast<GLenum>(state.destColor),
+                                             static_cast<GLenum>(state.srcAlpha),
+                                             static_cast<GLenum>(state.destAlpha));
 
-                        current.SrcColor  = state.SrcColor;
-                        current.DestColor = state.DestColor;
-                        current.SrcAlpha  = state.SrcAlpha;
-                        current.DestAlpha = state.DestAlpha;
+                        current.srcColor  = state.srcColor;
+                        current.destColor = state.destColor;
+                        current.srcAlpha  = state.srcAlpha;
+                        current.destAlpha = state.destAlpha;
                     }
                 }
             }
@@ -2720,22 +2722,22 @@ namespace vgfw
         {
             void FrameGraphBuffer::create(const Desc& desc, void* allocator)
             {
-                Handle = static_cast<TransientResources*>(allocator)->AcquireBuffer(desc);
+                handle = static_cast<TransientResources*>(allocator)->acquireBuffer(desc);
             }
 
-            void FrameGraphBuffer::destroy(const Desc& desc, void* allocator)
+            void FrameGraphBuffer::destroy(const Desc& desc, void* allocator) const
             {
-                static_cast<TransientResources*>(allocator)->ReleaseBuffer(desc, Handle);
+                static_cast<TransientResources*>(allocator)->releaseBuffer(desc, handle);
             }
 
             void FrameGraphTexture::create(const Desc& desc, void* allocator)
             {
-                Handle = static_cast<TransientResources*>(allocator)->AcquireTexture(desc);
+                handle = static_cast<TransientResources*>(allocator)->acquireTexture(desc);
             }
 
-            void FrameGraphTexture::destroy(const Desc& desc, void* allocator)
+            void FrameGraphTexture::destroy(const Desc& desc, void* allocator) const
             {
-                static_cast<TransientResources*>(allocator)->ReleaseTexture(desc, Handle);
+                static_cast<TransientResources*>(allocator)->releaseTexture(desc, handle);
             }
 
             void heartbeat(auto& objects, auto& pools, float dt, auto&& deleter)
@@ -2779,38 +2781,38 @@ namespace vgfw
             TransientResources::~TransientResources()
             {
                 for (auto& texture : m_Textures)
-                    m_RenderContext.Destroy(*texture);
+                    m_RenderContext.destroy(*texture);
                 for (auto& buffer : m_Buffers)
-                    m_RenderContext.Destroy(*buffer);
+                    m_RenderContext.destroy(*buffer);
             }
 
-            void TransientResources::Update(float dt)
+            void TransientResources::update(float dt)
             {
-                const auto deleter = [&](auto& object) { m_RenderContext.Destroy(object); };
+                const auto deleter = [&](auto& object) { m_RenderContext.destroy(object); };
                 heartbeat(m_Textures, m_TexturePools, dt, deleter);
                 heartbeat(m_Buffers, m_BufferPools, dt, deleter);
             }
 
-            Texture* TransientResources::AcquireTexture(const FrameGraphTexture::Desc& desc)
+            Texture* TransientResources::acquireTexture(const FrameGraphTexture::Desc& desc)
             {
                 const auto h    = std::hash<FrameGraphTexture::Desc> {}(desc);
                 auto&      pool = m_TexturePools[h];
                 if (pool.empty())
                 {
                     Texture texture;
-                    if (desc.Depth > 0)
+                    if (desc.depth > 0)
                     {
-                        texture = m_RenderContext.CreateTexture3D(desc.Extent, desc.Depth, desc.Format);
+                        texture = m_RenderContext.createTexture3D(desc.extent, desc.depth, desc.format);
                     }
                     else
                     {
                         texture =
-                            m_RenderContext.CreateTexture2D(desc.Extent, desc.Format, desc.NumMipLevels, desc.Layers);
+                            m_RenderContext.createTexture2D(desc.extent, desc.format, desc.numMipLevels, desc.layers);
                     }
 
                     glm::vec4 borderColor {0.0f};
                     auto      addressMode = SamplerAddressMode::ClampToEdge;
-                    switch (desc.Wrap)
+                    switch (desc.wrap)
                     {
                         case WrapMode::ClampToEdge:
                             addressMode = SamplerAddressMode::ClampToEdge;
@@ -2825,17 +2827,17 @@ namespace vgfw
                             break;
                     }
                     SamplerInfo samplerInfo {
-                        .MinFilter    = desc.Filter,
-                        .MipmapMode   = desc.NumMipLevels > 1 ? MipmapMode::Nearest : MipmapMode::None,
-                        .MagFilter    = desc.Filter,
-                        .AddressModeS = addressMode,
-                        .AddressModeT = addressMode,
-                        .AddressModeR = addressMode,
-                        .BorderColor  = borderColor,
+                        .minFilter    = desc.filter,
+                        .mipmapMode   = desc.numMipLevels > 1 ? MipmapMode::Nearest : MipmapMode::None,
+                        .magFilter    = desc.filter,
+                        .addressModeS = addressMode,
+                        .addressModeT = addressMode,
+                        .addressModeR = addressMode,
+                        .borderColor  = borderColor,
                     };
-                    if (desc.ShadowSampler)
-                        samplerInfo.CompareOperator = CompareOp::LessOrEqual;
-                    m_RenderContext.SetupSampler(texture, samplerInfo);
+                    if (desc.shadowSampler)
+                        samplerInfo.compareOperator = CompareOp::LessOrEqual;
+                    m_RenderContext.setupSampler(texture, samplerInfo);
 
                     m_Textures.push_back(std::make_unique<Texture>(std::move(texture)));
                     auto* ptr = m_Textures.back().get();
@@ -2844,24 +2846,24 @@ namespace vgfw
                 }
                 else
                 {
-                    auto* texture = pool.back().Resource;
+                    auto* texture = pool.back().resource;
                     pool.pop_back();
                     return texture;
                 }
             }
-            void TransientResources::ReleaseTexture(const FrameGraphTexture::Desc& desc, Texture* texture)
+            void TransientResources::releaseTexture(const FrameGraphTexture::Desc& desc, Texture* texture)
             {
                 const auto h = std::hash<FrameGraphTexture::Desc> {}(desc);
                 m_TexturePools[h].push_back({texture, 0.0f});
             }
 
-            Buffer* TransientResources::AcquireBuffer(const FrameGraphBuffer::Desc& desc)
+            Buffer* TransientResources::acquireBuffer(const FrameGraphBuffer::Desc& desc)
             {
                 const auto h    = std::hash<FrameGraphBuffer::Desc> {}(desc);
                 auto&      pool = m_BufferPools[h];
                 if (pool.empty())
                 {
-                    auto buffer = m_RenderContext.CreateBuffer(desc.Size);
+                    auto buffer = m_RenderContext.createBuffer(desc.size);
                     m_Buffers.push_back(std::make_unique<Buffer>(std::move(buffer)));
                     auto* ptr = m_Buffers.back().get();
                     VGFW_TRACE("[TransientResources] Created buffer: {0}", fmt::ptr(ptr));
@@ -2869,12 +2871,12 @@ namespace vgfw
                 }
                 else
                 {
-                    auto* buffer = pool.back().Resource;
+                    auto* buffer = pool.back().resource;
                     pool.pop_back();
                     return buffer;
                 }
             }
-            void TransientResources::ReleaseBuffer(const FrameGraphBuffer::Desc& desc, Buffer* buffer)
+            void TransientResources::releaseBuffer(const FrameGraphBuffer::Desc& desc, Buffer* buffer)
             {
                 const auto h = std::hash<FrameGraphBuffer::Desc> {}(desc);
                 m_BufferPools[h].push_back({std::move(buffer), 0.0f});
@@ -2885,26 +2887,26 @@ namespace vgfw
                 assert(texture && *texture);
                 return fg.import <FrameGraphTexture>(name,
                                                      {
-                                                         .Extent       = texture->GetExtent(),
-                                                         .NumMipLevels = texture->GetNumMipLevels(),
-                                                         .Layers       = texture->GetNumLayers(),
-                                                         .Format       = texture->GetPixelFormat(),
+                                                         .extent       = texture->getExtent(),
+                                                         .numMipLevels = texture->getNumMipLevels(),
+                                                         .layers       = texture->getNumLayers(),
+                                                         .format       = texture->getPixelFormat(),
                                                      },
                                                      {texture});
             }
             Texture& getTexture(FrameGraphPassResources& resources, FrameGraphResource id)
             {
-                return *resources.get<FrameGraphTexture>(id).Handle;
+                return *resources.get<FrameGraphTexture>(id).handle;
             }
 
             FrameGraphResource importBuffer(FrameGraph& fg, const std::string& name, Buffer* buffer)
             {
                 assert(buffer && *buffer);
-                return fg.import <FrameGraphBuffer>(name, {.Size = buffer->GetSize()}, {buffer});
+                return fg.import <FrameGraphBuffer>(name, {.size = buffer->getSize()}, {buffer});
             }
             Buffer& getBuffer(FrameGraphPassResources& resources, FrameGraphResource id)
             {
-                return *resources.get<FrameGraphBuffer>(id).Handle;
+                return *resources.get<FrameGraphBuffer>(id).handle;
             }
         } // namespace framegraph
 
@@ -2942,7 +2944,7 @@ namespace vgfw
                 }
 
                 ImGui_ImplGlfw_InitForOpenGL(
-                    static_cast<GLFWwindow*>(getGraphicsContext().GetWindow()->GetPlatformWindow()), true);
+                    static_cast<GLFWwindow*>(getGraphicsContext().getWindow()->getPlatformWindow()), true);
                 ImGui_ImplOpenGL3_Init("#version 330");
             }
 
@@ -3004,7 +3006,7 @@ namespace vgfw
 
                 ImGuiIO& io = ImGui::GetIO();
                 io.DisplaySize =
-                    ImVec2(getGraphicsContext().GetWindow()->GetWidth(), getGraphicsContext().GetWindow()->GetHeight());
+                    ImVec2(getGraphicsContext().getWindow()->getWidth(), getGraphicsContext().getWindow()->getHeight());
 
                 ImGui::Render();
 
@@ -3029,10 +3031,10 @@ namespace vgfw
 
         void init(const RendererInitInfo& initInfo)
         {
-            g_GraphicsContext.Init(initInfo.Window);
+            g_GraphicsContext.init(initInfo.window);
             g_RenderContext = std::make_shared<RenderContext>();
 
-            imgui::init(initInfo.EnableImGuiDocking);
+            imgui::init(initInfo.enableImGuiDocking);
 
             g_RendererInit = true;
         }
@@ -3041,12 +3043,12 @@ namespace vgfw
 
         void endImGui() { imgui::endFrame(); }
 
-        void present() { g_GraphicsContext.SwapBuffers(); }
+        void present() { g_GraphicsContext.swapBuffers(); }
 
         void shutdown()
         {
             imgui::shutdown();
-            g_GraphicsContext.Shutdown();
+            g_GraphicsContext.shutdown();
         }
 
         bool isLoaded() { return g_RendererInit; }
@@ -3068,8 +3070,8 @@ namespace vgfw
             const auto h = std::filesystem::hash_value(p);
             if (auto it = g_TextureCache.find(h); it != g_TextureCache.cend())
             {
-                auto extent = it->second->GetExtent();
-                assert(extent.Width > 0 && extent.Height > 0);
+                auto extent = it->second->getExtent();
+                assert(extent.width > 0 && extent.height > 0);
 
                 return it->second;
             }
@@ -3082,28 +3084,28 @@ namespace vgfw
             const auto hdr = stbi_is_hdr_from_file(f);
 
             int32_t width, height, numChannels;
-            auto*   pixels = hdr ? (void*)stbi_loadf_from_file(f, &width, &height, &numChannels, 0) :
-                                   (void*)stbi_load_from_file(f, &width, &height, &numChannels, 0);
+            auto*   pixels = hdr ? reinterpret_cast<void*>(stbi_loadf_from_file(f, &width, &height, &numChannels, 0)) :
+                                   reinterpret_cast<void*>(stbi_load_from_file(f, &width, &height, &numChannels, 0));
             fclose(f);
             assert(pixels);
 
             renderer::ImageData imageData {
-                .DataType = static_cast<GLenum>(hdr ? GL_FLOAT : GL_UNSIGNED_BYTE),
-                .Pixels   = pixels,
+                .dataType = static_cast<GLenum>(hdr ? GL_FLOAT : GL_UNSIGNED_BYTE),
+                .pixels   = pixels,
             };
             renderer::PixelFormat pixelFormat {renderer::PixelFormat::Unknown};
             switch (numChannels)
             {
                 case 1:
-                    imageData.Format = GL_RED;
+                    imageData.format = GL_RED;
                     pixelFormat      = renderer::PixelFormat::R8_UNorm;
                     break;
                 case 3:
-                    imageData.Format = GL_RGB;
+                    imageData.format = GL_RGB;
                     pixelFormat      = hdr ? renderer::PixelFormat::RGB16F : renderer::PixelFormat::RGB8_UNorm;
                     break;
                 case 4:
-                    imageData.Format = GL_RGBA;
+                    imageData.format = GL_RGBA;
                     pixelFormat      = hdr ? renderer::PixelFormat::RGBA16F : renderer::PixelFormat::RGBA8_UNorm;
                     break;
 
@@ -3115,20 +3117,20 @@ namespace vgfw
             if (math::isPowerOf2(width) && math::isPowerOf2(height))
                 numMipLevels = renderer::calcMipLevels(glm::max(width, height));
 
-            auto texture = rc.CreateTexture2D(
+            auto texture = rc.createTexture2D(
                 {static_cast<uint32_t>(width), static_cast<uint32_t>(height)}, pixelFormat, numMipLevels);
-            rc.Upload(texture, 0, {width, height}, imageData)
-                .SetupSampler(texture,
+            rc.upload(texture, 0, {width, height}, imageData)
+                .setupSampler(texture,
                               {
-                                  .MinFilter     = renderer::TexelFilter::Linear,
-                                  .MipmapMode    = renderer::MipmapMode::Linear,
-                                  .MagFilter     = renderer::TexelFilter::Linear,
-                                  .MaxAnisotropy = 16.0f,
+                                  .minFilter     = renderer::TexelFilter::Linear,
+                                  .mipmapMode    = renderer::MipmapMode::Linear,
+                                  .magFilter     = renderer::TexelFilter::Linear,
+                                  .maxAnisotropy = 16.0f,
                               });
             stbi_image_free(pixels);
 
             if (numMipLevels > 1)
-                rc.GenerateMipmaps(texture);
+                rc.generateMipmaps(texture);
 
             auto* newTexture  = new renderer::Texture {std::move(texture)};
             g_TextureCache[h] = newTexture;
@@ -3147,7 +3149,7 @@ namespace vgfw
             const auto h = std::filesystem::hash_value(p);
             if (auto it = g_TextureCache.find(h); it != g_TextureCache.cend())
             {
-                rc.Destroy(texture);
+                rc.destroy(texture);
                 g_TextureCache.erase(h);
             }
         }
@@ -3178,14 +3180,14 @@ namespace vgfw
             const auto& shapes    = reader.GetShapes();
             const auto& materials = reader.GetMaterials();
 
-            auto vertexFormat = renderer::VertexFormat::Builder {}.BuildDefault();
+            auto vertexFormat = renderer::VertexFormat::Builder {}.buildDefault();
 
             // Loop over shapes
             for (const auto& shape : shapes)
             {
-                auto& meshPrimitive = model.Meshes.emplace_back();
+                auto& meshPrimitive = model.meshPrimitives.emplace_back();
 
-                meshPrimitive.Name = shape.name;
+                meshPrimitive.name = shape.name;
 
                 // Loop over faces(polygon)
                 size_t indexOffset = 0;
@@ -3196,7 +3198,7 @@ namespace vgfw
                     // Loop over vertices in the face.
                     for (size_t v = 0; v < fv; v++)
                     {
-                        auto& vertex = meshPrimitive.Vertices.emplace_back();
+                        auto& vertex = meshPrimitive.vertices.emplace_back();
 
                         // access to vertex
                         tinyobj::index_t idx = shape.mesh.indices[indexOffset + v];
@@ -3204,7 +3206,7 @@ namespace vgfw
                         tinyobj::real_t  vy  = attrib.vertices[3 * static_cast<size_t>(idx.vertex_index) + 1];
                         tinyobj::real_t  vz  = attrib.vertices[3 * static_cast<size_t>(idx.vertex_index) + 2];
 
-                        vertex.Position = {vx, vy, vz};
+                        vertex.position = {vx, vy, vz};
 
                         // Check if `normal_index` is zero or positive. negative = no normal data
                         if (idx.normal_index >= 0)
@@ -3213,7 +3215,7 @@ namespace vgfw
                             tinyobj::real_t ny = attrib.normals[3 * static_cast<size_t>(idx.normal_index) + 1];
                             tinyobj::real_t nz = attrib.normals[3 * static_cast<size_t>(idx.normal_index) + 2];
 
-                            vertex.Normal = {nx, ny, nz};
+                            vertex.normal = {nx, ny, nz};
                         }
 
                         // Check if `texcoord_index` is zero or positive. negative = no texcoord data
@@ -3222,21 +3224,21 @@ namespace vgfw
                             tinyobj::real_t tx = attrib.texcoords[2 * static_cast<size_t>(idx.texcoord_index) + 0];
                             tinyobj::real_t ty = attrib.texcoords[2 * static_cast<size_t>(idx.texcoord_index) + 1];
 
-                            vertex.TexCoords = {tx, ty};
+                            vertex.texCoords = {tx, ty};
                         }
 
-                        meshPrimitive.Indices.push_back(meshPrimitive.Indices.size());
+                        meshPrimitive.indices.push_back(meshPrimitive.indices.size());
 
                         // Load index buffer & vertex buffer
-                        auto indexBuf = renderer::getRenderContext().CreateIndexBuffer(
-                            renderer::IndexType::UInt32, meshPrimitive.Indices.size(), meshPrimitive.Indices.data());
-                        auto vertexBuf = renderer::getRenderContext().CreateVertexBuffer(
-                            vertexFormat->GetStride(), meshPrimitive.Vertices.size(), meshPrimitive.Vertices.data());
+                        auto indexBuf = renderer::getRenderContext().createIndexBuffer(
+                            renderer::IndexType::UInt32, meshPrimitive.indices.size(), meshPrimitive.indices.data());
+                        auto vertexBuf = renderer::getRenderContext().createVertexBuffer(
+                            vertexFormat->getStride(), meshPrimitive.vertices.size(), meshPrimitive.vertices.data());
 
-                        meshPrimitive.IndexBuf = std::shared_ptr<renderer::IndexBuffer>(
+                        meshPrimitive.indexBuffer = std::shared_ptr<renderer::IndexBuffer>(
                             new renderer::IndexBuffer {std::move(indexBuf)},
                             renderer::RenderContext::ResourceDeleter {renderer::getRenderContext()});
-                        meshPrimitive.VertexBuf = std::shared_ptr<renderer::VertexBuffer>(
+                        meshPrimitive.vertexBuffer = std::shared_ptr<renderer::VertexBuffer>(
                             new renderer::VertexBuffer {std::move(vertexBuf)},
                             renderer::RenderContext::ResourceDeleter {renderer::getRenderContext()});
                     }
@@ -3294,7 +3296,7 @@ namespace vgfw
                 const auto&              image = gltfModel.images[texture.source];
                 vgfw::renderer::Texture* loadedTexture =
                     vgfw::io::load(modelPath.parent_path() / image.uri, renderer::getRenderContext());
-                model.TextureMap[texture.source] = loadedTexture;
+                model.textureMap[texture.source] = loadedTexture;
             }
 
             // Load materials
@@ -3305,17 +3307,17 @@ namespace vgfw
                 if (material.values.find("baseColorTexture") != material.values.end())
                 {
                     int textureIndex          = material.values.at("baseColorTexture").TextureIndex();
-                    mat.BaseColorTextureIndex = textureIndex;
+                    mat.baseColorTextureIndex = textureIndex;
                 }
                 if (material.values.find("metallicRoughnessTexture") != material.values.end())
                 {
                     int textureIndex                  = material.values.at("metallicRoughnessTexture").TextureIndex();
-                    mat.MetallicRoughnessTextureIndex = textureIndex;
+                    mat.metallicRoughnessTextureIndex = textureIndex;
                 }
-                model.MaterialMap[&material - &gltfModel.materials[0]] = mat;
+                model.materialMap[&material - &gltfModel.materials[0]] = mat;
             }
 
-            auto vertexFormat = renderer::VertexFormat::Builder {}.BuildDefault();
+            auto vertexFormat = renderer::VertexFormat::Builder {}.buildDefault();
 
             // Load meshes
             for (const auto& mesh : gltfModel.meshes)
@@ -3325,8 +3327,8 @@ namespace vgfw
                     if (primitive.indices < 0)
                         continue;
 
-                    auto& meshPrimitive = model.Meshes.emplace_back();
-                    meshPrimitive.Name  = mesh.name;
+                    auto& meshPrimitive = model.meshPrimitives.emplace_back();
+                    meshPrimitive.name  = mesh.name;
 
                     const tinygltf::Accessor&   indexAccessor   = gltfModel.accessors[primitive.indices];
                     const tinygltf::BufferView& indexBufferView = gltfModel.bufferViews[indexAccessor.bufferView];
@@ -3341,21 +3343,21 @@ namespace vgfw
                             for (size_t i = 0; i < indexAccessor.count; ++i)
                             {
                                 const uint32_t* indices = reinterpret_cast<const uint32_t*>(indicesData);
-                                meshPrimitive.Indices.push_back(indices[i]);
+                                meshPrimitive.indices.push_back(indices[i]);
                             }
                             break;
                         case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
                             for (size_t i = 0; i < indexAccessor.count; ++i)
                             {
                                 const uint16_t* indices = reinterpret_cast<const uint16_t*>(indicesData);
-                                meshPrimitive.Indices.push_back(indices[i]);
+                                meshPrimitive.indices.push_back(indices[i]);
                             }
                             break;
                         case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
                             for (size_t i = 0; i < indexAccessor.count; ++i)
                             {
                                 const uint8_t* indices = reinterpret_cast<const uint8_t*>(indicesData);
-                                meshPrimitive.Indices.push_back(indices[i]);
+                                meshPrimitive.indices.push_back(indices[i]);
                             }
                             break;
                     }
@@ -3369,8 +3371,8 @@ namespace vgfw
                     {
                         const float* positions = reinterpret_cast<const float*>(
                             positionBuffer.data.data() + positionBufferView.byteOffset + positionAccessor.byteOffset);
-                        meshPrimitive.Vertices.emplace_back();
-                        meshPrimitive.Vertices.back().Position = {
+                        meshPrimitive.vertices.emplace_back();
+                        meshPrimitive.vertices.back().position = {
                             positions[3 * i + 0], positions[3 * i + 1], positions[3 * i + 2]};
                     }
 
@@ -3385,7 +3387,7 @@ namespace vgfw
                         {
                             const float* normals = reinterpret_cast<const float*>(
                                 normalBuffer.data.data() + normalBufferView.byteOffset + normalAccessor.byteOffset);
-                            meshPrimitive.Vertices[i].Normal = {
+                            meshPrimitive.vertices[i].normal = {
                                 normals[3 * i + 0], normals[3 * i + 1], normals[3 * i + 2]};
                         }
                     }
@@ -3403,24 +3405,24 @@ namespace vgfw
                             const float* texCoords = reinterpret_cast<const float*>(texCoordBuffer.data.data() +
                                                                                     texCoordBufferView.byteOffset +
                                                                                     texCoordAccessor.byteOffset);
-                            meshPrimitive.Vertices[i].TexCoords = {texCoords[2 * i + 0], texCoords[2 * i + 1]};
+                            meshPrimitive.vertices[i].texCoords = {texCoords[2 * i + 0], texCoords[2 * i + 1]};
                         }
                     }
 
                     // TODO: Additional attributes such as tangents, joint indices, and weights can be added here
 
-                    meshPrimitive.MaterialIndex = primitive.material;
+                    meshPrimitive.materialIndex = primitive.material;
 
                     // Load index buffer & vertex buffer
-                    auto indexBuf = renderer::getRenderContext().CreateIndexBuffer(
-                        renderer::IndexType::UInt32, meshPrimitive.Indices.size(), meshPrimitive.Indices.data());
-                    auto vertexBuf = renderer::getRenderContext().CreateVertexBuffer(
-                        vertexFormat->GetStride(), meshPrimitive.Vertices.size(), meshPrimitive.Vertices.data());
+                    auto indexBuf = renderer::getRenderContext().createIndexBuffer(
+                        renderer::IndexType::UInt32, meshPrimitive.indices.size(), meshPrimitive.indices.data());
+                    auto vertexBuf = renderer::getRenderContext().createVertexBuffer(
+                        vertexFormat->getStride(), meshPrimitive.vertices.size(), meshPrimitive.vertices.data());
 
-                    meshPrimitive.IndexBuf = std::shared_ptr<renderer::IndexBuffer>(
+                    meshPrimitive.indexBuffer = std::shared_ptr<renderer::IndexBuffer>(
                         new renderer::IndexBuffer {std::move(indexBuf)},
                         renderer::RenderContext::ResourceDeleter {renderer::getRenderContext()});
-                    meshPrimitive.VertexBuf = std::shared_ptr<renderer::VertexBuffer>(
+                    meshPrimitive.vertexBuffer = std::shared_ptr<renderer::VertexBuffer>(
                         new renderer::VertexBuffer {std::move(vertexBuf)},
                         renderer::RenderContext::ResourceDeleter {renderer::getRenderContext()});
                 }
