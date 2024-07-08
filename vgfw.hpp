@@ -89,15 +89,18 @@
 #include <fg/FrameGraph.hpp>
 #include <fg/FrameGraphResource.hpp>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
+
+#define TINYGLTF_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+// #define TINYGLTF_NOEXCEPTION // optional. disable exception handling.
+#include <tiny_gltf.h>
 
 namespace vgfw
 {
@@ -1055,10 +1058,16 @@ namespace vgfw
             glm::vec2 TexCoords;
         };
 
-        struct Model
+        struct MeshInstance
         {
+            std::string           Name;
             std::vector<Vertex>   Vertices;
             std::vector<uint32_t> Indices;
+        };
+
+        struct Model
+        {
+            std::vector<MeshInstance> Meshes;
         };
     } // namespace resource
 
@@ -3112,7 +3121,7 @@ namespace vgfw
             }
         }
 
-        bool load(const std::filesystem::path& modelPath, resource::Model& model)
+        bool loadOBJ(const std::filesystem::path& modelPath, resource::Model& model)
         {
             std::string              inputfile = modelPath.generic_string();
             tinyobj::ObjReaderConfig readerConfig;
@@ -3141,6 +3150,10 @@ namespace vgfw
             // Loop over shapes
             for (const auto& shape : shapes)
             {
+                auto& meshInstance = model.Meshes.emplace_back();
+
+                meshInstance.Name = shape.name;
+
                 // Loop over faces(polygon)
                 size_t indexOffset = 0;
                 for (size_t f = 0; f < shape.mesh.num_face_vertices.size(); f++)
@@ -3150,7 +3163,7 @@ namespace vgfw
                     // Loop over vertices in the face.
                     for (size_t v = 0; v < fv; v++)
                     {
-                        auto& vertex = model.Vertices.emplace_back();
+                        auto& vertex = meshInstance.Vertices.emplace_back();
 
                         // access to vertex
                         tinyobj::index_t idx = shape.mesh.indices[indexOffset + v];
@@ -3179,13 +3192,144 @@ namespace vgfw
                             vertex.TexCoords = {tx, ty};
                         }
 
-                        model.Indices.push_back(model.Indices.size());
+                        meshInstance.Indices.push_back(meshInstance.Indices.size());
                     }
                     indexOffset += fv;
                 }
             }
 
             return true;
+        }
+
+        bool loadGLTF(const std::filesystem::path& modelPath, resource::Model& model)
+        {
+            tinygltf::TinyGLTF loader;
+            tinygltf::Model    gltfModel;
+            std::string        err;
+            std::string        warn;
+
+            bool        ret = false;
+            const auto& ext = modelPath.extension();
+
+            if (ext == ".gltf")
+            {
+                ret = loader.LoadASCIIFromFile(&gltfModel, &err, &warn, modelPath.generic_string());
+            }
+            else if (ext == ".glb")
+            {
+                ret = loader.LoadBinaryFromFile(&gltfModel, &err, &warn, modelPath.generic_string());
+            }
+            else
+            {
+                VGFW_ERROR("[TinyGLTF] Unsupported format");
+                return false;
+            }
+
+            if (!warn.empty())
+            {
+                VGFW_WARN("[TinyGLTF] {0}", warn);
+            }
+
+            if (!err.empty())
+            {
+                VGFW_ERROR("[TinyGLTF] {0}", err);
+                return false;
+            }
+
+            if (!ret)
+            {
+                VGFW_ERROR("[TinyGLTF] Failed to load GLTF model: {0}", modelPath.generic_string());
+                return false;
+            }
+
+            for (const auto& mesh : gltfModel.meshes)
+            {
+                auto& meshInstance = model.Meshes.emplace_back();
+                meshInstance.Name  = mesh.name;
+
+                for (const auto& primitive : mesh.primitives)
+                {
+                    if (primitive.indices < 0)
+                        continue;
+
+                    const tinygltf::Accessor&   indexAccessor   = gltfModel.accessors[primitive.indices];
+                    const tinygltf::BufferView& indexBufferView = gltfModel.bufferViews[indexAccessor.bufferView];
+                    const tinygltf::Buffer&     indexBuffer     = gltfModel.buffers[indexBufferView.buffer];
+
+                    for (size_t i = 0; i < indexAccessor.count; ++i)
+                    {
+                        const uint16_t* indices = reinterpret_cast<const uint16_t*>(
+                            indexBuffer.data.data() + indexBufferView.byteOffset + indexAccessor.byteOffset);
+                        meshInstance.Indices.push_back(indices[i]);
+                    }
+
+                    const tinygltf::Accessor& positionAccessor =
+                        gltfModel.accessors[primitive.attributes.find("POSITION")->second];
+                    const tinygltf::BufferView& positionBufferView = gltfModel.bufferViews[positionAccessor.bufferView];
+                    const tinygltf::Buffer&     positionBuffer     = gltfModel.buffers[positionBufferView.buffer];
+
+                    for (size_t i = 0; i < positionAccessor.count; ++i)
+                    {
+                        const float* positions = reinterpret_cast<const float*>(
+                            positionBuffer.data.data() + positionBufferView.byteOffset + positionAccessor.byteOffset);
+                        meshInstance.Vertices.emplace_back();
+                        meshInstance.Vertices.back().Position = {
+                            positions[3 * i + 0], positions[3 * i + 1], positions[3 * i + 2]};
+                    }
+
+                    if (primitive.attributes.find("NORMAL") != primitive.attributes.end())
+                    {
+                        const tinygltf::Accessor& normalAccessor =
+                            gltfModel.accessors[primitive.attributes.find("NORMAL")->second];
+                        const tinygltf::BufferView& normalBufferView = gltfModel.bufferViews[normalAccessor.bufferView];
+                        const tinygltf::Buffer&     normalBuffer     = gltfModel.buffers[normalBufferView.buffer];
+
+                        for (size_t i = 0; i < normalAccessor.count; ++i)
+                        {
+                            const float* normals = reinterpret_cast<const float*>(
+                                normalBuffer.data.data() + normalBufferView.byteOffset + normalAccessor.byteOffset);
+                            meshInstance.Vertices[i].Normal = {
+                                normals[3 * i + 0], normals[3 * i + 1], normals[3 * i + 2]};
+                        }
+                    }
+
+                    if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end())
+                    {
+                        const tinygltf::Accessor& texCoordAccessor =
+                            gltfModel.accessors[primitive.attributes.find("TEXCOORD_0")->second];
+                        const tinygltf::BufferView& texCoordBufferView =
+                            gltfModel.bufferViews[texCoordAccessor.bufferView];
+                        const tinygltf::Buffer& texCoordBuffer = gltfModel.buffers[texCoordBufferView.buffer];
+
+                        for (size_t i = 0; i < texCoordAccessor.count; ++i)
+                        {
+                            const float* texCoords = reinterpret_cast<const float*>(texCoordBuffer.data.data() +
+                                                                                    texCoordBufferView.byteOffset +
+                                                                                    texCoordAccessor.byteOffset);
+                            meshInstance.Vertices[i].TexCoords = {texCoords[2 * i + 0], texCoords[2 * i + 1]};
+                        }
+                    }
+
+                    // Additional attributes such as tangents, joint indices, and weights can be added here
+                }
+            }
+
+            return true;
+        }
+
+        bool load(const std::filesystem::path& modelPath, resource::Model& model)
+        {
+            const auto& ext = modelPath.extension();
+            if (ext == ".obj")
+            {
+                return loadOBJ(modelPath, model);
+            }
+            else if (ext == ".gltf" || ext == ".glb")
+            {
+                return loadGLTF(modelPath, model);
+            }
+
+            return false;
         }
     } // namespace io
 

@@ -35,8 +35,6 @@ layout(location = 2) in vec3 vNormal;
 
 layout(location = 0) out vec4 FragColor;
 
-layout(binding = 0) uniform sampler2D spotTexture;
-
 layout(location = 3) uniform vec3 lightPos;
 layout(location = 4) uniform vec3 viewPos;
 layout(location = 5) uniform vec3 lightColor;
@@ -62,7 +60,7 @@ void main()
     vec3 specular = specularStrength * spec * lightColor;
 
     vec3 result = (ambient + diffuse + specular) * objectColor;
-    FragColor = texture(spotTexture, vTexCoords) * vec4(result, 1.0);
+    FragColor = vec4(result, 1.0);
 }
 )";
 
@@ -76,7 +74,7 @@ int main()
     }
 
     // Create a window instance
-    auto window = vgfw::window::create({.Title = "03-obj-model", .EnableMSAA = true, .AASample = 8});
+    auto window = vgfw::window::create({.Title = "04-gltf-model", .EnableMSAA = true, .AASample = 8});
 
     // Init renderer
     vgfw::renderer::init({.Window = window});
@@ -110,20 +108,18 @@ int main()
                                 .Build();
 
     // Load model
-    vgfw::resource::Model spotModel {};
-    if (!vgfw::io::load("assets/models/spot.obj", spotModel))
+    vgfw::resource::Model suzanneModel {};
+    if (!vgfw::io::load("assets/models/Suzanne.gltf", suzanneModel))
     {
         return -1;
     }
 
     // Create index buffer & vertex buffer
-    auto indexBuffer = rc.CreateIndexBuffer(
-        vgfw::renderer::IndexType::UInt32, spotModel.Meshes[0].Indices.size(), spotModel.Meshes[0].Indices.data());
+    auto indexBuffer  = rc.CreateIndexBuffer(vgfw::renderer::IndexType::UInt32,
+                                            suzanneModel.Meshes[0].Indices.size(),
+                                            suzanneModel.Meshes[0].Indices.data());
     auto vertexBuffer = rc.CreateVertexBuffer(
-        vertexFormat->GetStride(), spotModel.Meshes[0].Vertices.size(), spotModel.Meshes[0].Vertices.data());
-
-    // Load texture
-    auto* spotTexture = vgfw::io::load("assets/models/spot_texture.png", rc);
+        vertexFormat->GetStride(), suzanneModel.Meshes[0].Vertices.size(), suzanneModel.Meshes[0].Vertices.data());
 
     // Start time
     auto startTime = std::chrono::high_resolution_clock::now();
@@ -168,11 +164,13 @@ int main()
             .SetUniformVec3("viewPos", viewPos)
             .SetUniformVec3("lightColor", lightColor)
             .SetUniformVec3("objectColor", objectColor)
-            .BindTexture(0, *spotTexture)
-            .Draw(vertexBuffer, indexBuffer, spotModel.Meshes[0].Indices.size(), spotModel.Meshes[0].Vertices.size());
+            .Draw(vertexBuffer,
+                  indexBuffer,
+                  suzanneModel.Meshes[0].Indices.size(),
+                  suzanneModel.Meshes[0].Vertices.size());
 
         vgfw::renderer::beginImGui();
-        ImGui::Begin("OBJ Model");
+        ImGui::Begin("GLTF Model");
         ImGui::SliderFloat("Camera FOV", &fov, 1.0f, 179.0f);
         ImGui::DragFloat3("Camera Position", glm::value_ptr(viewPos));
         ImGui::DragFloat3("Light Position", glm::value_ptr(lightPos));
