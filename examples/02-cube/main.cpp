@@ -46,11 +46,10 @@ int main()
     }
 
     // Create a window instance
-    auto window =
-        vgfw::window::create({.Width = 800, .Height = 600, .Title = "02-cube", .EnableMSAA = true, .AASample = 8});
+    auto window = vgfw::window::create({.Title = "02-cube", .EnableMSAA = true, .AASample = 8});
 
     // Init renderer
-    vgfw::renderer::init(window);
+    vgfw::renderer::init({.Window = window});
 
     // Get graphics & render context
     auto& rc = vgfw::renderer::getRenderContext();
@@ -140,6 +139,8 @@ int main()
     // Start time
     auto startTime = std::chrono::high_resolution_clock::now();
 
+    float fov = 60.0f;
+
     // Main loop
     while (!window->ShouldClose())
     {
@@ -156,16 +157,23 @@ int main()
         glm::mat4 view = glm::lookAt(glm::vec3(1.5f, 1.5f, 1.5f), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
         // Create the projection matrix
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
+        glm::mat4 projection =
+            glm::perspective(glm::radians(fov), window->GetWidth() * 1.0f / window->GetHeight(), 0.1f, 100.0f);
 
         // Render
-        rc.BeginRendering({.Extent = {.Width = 800, .Height = 600}}, glm::vec4 {0.2f, 0.3f, 0.3f, 1.0f}, 1.0f);
+        rc.BeginRendering({.Extent = {.Width = window->GetWidth(), .Height = window->GetHeight()}}, glm::vec4 {0.2f, 0.3f, 0.3f, 1.0f}, 1.0f);
         rc.BindGraphicsPipeline(graphicsPipeline)
             .SetUniformMat4("model", model)
             .SetUniformMat4("view", view)
             .SetUniformMat4("projection", projection)
             .BindTexture(0, *texture)
             .Draw(vertexBuffer, {}, 0, 36);
+
+        vgfw::renderer::beginImGui();
+        ImGui::Begin("Cube");
+        ImGui::SliderFloat("FOV", &fov, 1.0f, 179.0f);
+        ImGui::End();
+        vgfw::renderer::endImGui();
 
         vgfw::renderer::present();
     }

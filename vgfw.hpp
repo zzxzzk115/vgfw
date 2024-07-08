@@ -92,6 +92,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
+
 namespace vgfw
 {
     namespace utils
@@ -112,6 +116,12 @@ namespace vgfw
         void init();
         void shutdown();
     } // namespace log
+
+    // fwd
+    namespace renderer
+    {
+        class GraphicsContext;
+    }
 
     namespace window
     {
@@ -181,6 +191,8 @@ namespace vgfw
             virtual void* GetNativeWindow() const   = 0;
 
         protected:
+            friend class renderer::GraphicsContext;
+
             /**
              * @brief Cleanup resources and shutdown the window.
              *
@@ -191,8 +203,6 @@ namespace vgfw
         class GLFWWindow final : public Window
         {
         public:
-            ~GLFWWindow() { Shutdown(); }
-
             virtual WindowType GetType() override { return WindowType::GLFW; }
 
             virtual bool Init(const WindowInitInfo& initInfo) override;
@@ -252,11 +262,14 @@ namespace vgfw
             GraphicsContext() = default;
 
             void Init(const std::shared_ptr<window::Window>& window);
+            void Shutdown();
 
             void        SwapBuffers();
             static void SetVSync(bool vsyncEnabled);
 
             bool IsSupportDSA() const { return m_SupportDSA; }
+
+            inline std::shared_ptr<window::Window> GetWindow() const { return m_Window; }
 
         private:
             static int LoadGL();
@@ -999,11 +1012,32 @@ namespace vgfw
             Buffer&            getBuffer(FrameGraphPassResources& resources, FrameGraphResource id);
         } // namespace framegraph
 
+        namespace imgui
+        {
+            static bool g_EnableDocking = false;
+
+            void init(bool enableDocking);
+            void beginFrame();
+            void endFrame();
+            void shutdown();
+        } // namespace imgui
+
+        static bool                           g_RendererInit = false;
         static GraphicsContext                g_GraphicsContext;
         static std::shared_ptr<RenderContext> g_RenderContext = nullptr;
 
-        void init(const std::shared_ptr<window::Window>& window);
+        struct RendererInitInfo
+        {
+            std::shared_ptr<window::Window> Window {nullptr};
+            bool                            EnableImGuiDocking {false};
+        };
+
+        void init(const RendererInitInfo& initInfo);
+        void beginImGui();
+        void endImGui();
         void present();
+        void shutdown();
+        bool isLoaded();
 
         GraphicsContext& getGraphicsContext();
         RenderContext&   getRenderContext();
@@ -1014,7 +1048,8 @@ namespace vgfw
         static std::unordered_map<size_t, renderer::Texture*> g_TextureCache;
 
         renderer::Texture*
-             load(const std::filesystem::path& texturePath, renderer::RenderContext& rc, bool flip = true);
+        load(const std::filesystem::path& texturePath, renderer::RenderContext& rc, bool flip = true);
+
         void release(const std::filesystem::path& texturePath, renderer::Texture& texture, renderer::RenderContext& rc);
     } // namespace io
 
@@ -1246,6 +1281,8 @@ namespace vgfw
 
             m_SupportDSA = GLAD_GL_VERSION_4_5 || GLAD_GL_VERSION_4_6;
         }
+
+        void GraphicsContext::Shutdown() { m_Window->Shutdown(); }
 
         void GraphicsContext::SwapBuffers() { m_Window->SwapBuffers(); }
 
@@ -2810,13 +2847,148 @@ namespace vgfw
             }
         } // namespace framegraph
 
-        void init(const std::shared_ptr<window::Window>& window)
+        namespace imgui
         {
-            g_GraphicsContext.Init(window);
+            void init(bool enableDocking)
+            {
+                g_EnableDocking = enableDocking;
+
+                // Setup Dear ImGui context
+                IMGUI_CHECKVERSION();
+                ImGui::CreateContext();
+                ImGuiIO& io = ImGui::GetIO();
+                (void)io;
+                io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+                // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+                if (enableDocking)
+                {
+                    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Enable Docking
+                }
+
+                io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // Enable Multi-Viewport
+                // io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoTaskBarIcons;
+                // io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoMerge;
+
+                // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to
+                // regular ones.
+                ImGuiStyle& style = ImGui::GetStyle();
+                if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+                {
+                    style.WindowRounding              = 0.0f;
+                    style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+                    style.PopupRounding = style.TabRounding = 6.0f;
+                }
+
+                ImGui_ImplGlfw_InitForOpenGL(
+                    static_cast<GLFWwindow*>(getGraphicsContext().GetWindow()->GetPlatformWindow()), true);
+                ImGui_ImplOpenGL3_Init("#version 330");
+            }
+
+            void beginFrame()
+            {
+                ImGui_ImplOpenGL3_NewFrame();
+                ImGui_ImplGlfw_NewFrame();
+                ImGui::NewFrame();
+
+                if (g_EnableDocking)
+                {
+                    static bool               dockSpaceOpen  = true;
+                    static ImGuiDockNodeFlags dockSpaceFlags = ImGuiDockNodeFlags_None;
+
+                    ImGuiWindowFlags windowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+
+                    ImGuiViewport* viewport = ImGui::GetMainViewport();
+                    ImGui::SetNextWindowPos(viewport->Pos);
+                    ImGui::SetNextWindowSize(viewport->Size);
+                    ImGui::SetNextWindowViewport(viewport->ID);
+                    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+                    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+                    windowFlags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
+                                   ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+                    windowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+
+                    if (dockSpaceFlags & ImGuiDockNodeFlags_PassthruCentralNode)
+                    {
+                        windowFlags |= ImGuiWindowFlags_NoBackground;
+                    }
+
+                    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+                    ImGui::Begin("DockSpaceWindow", &dockSpaceOpen, windowFlags);
+                    ImGui::PopStyleVar(3);
+
+                    // DockSpace
+                    ImGuiIO&    io          = ImGui::GetIO();
+                    ImGuiStyle& style       = ImGui::GetStyle();
+                    float       minWinSizeX = style.WindowMinSize.x;
+                    float       minWinSizeY = style.WindowMinSize.y;
+                    style.WindowMinSize.x   = 350.0f;
+                    style.WindowMinSize.y   = 120.0f;
+                    if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
+                    {
+                        ImGuiID dockSpaceId = ImGui::GetID("DockSpace");
+                        ImGui::DockSpace(dockSpaceId, ImVec2(0.0f, 0.0f), dockSpaceFlags);
+                    }
+                    style.WindowMinSize.x = minWinSizeX;
+                    style.WindowMinSize.y = minWinSizeY;
+                }
+            }
+
+            void endFrame()
+            {
+                if (g_EnableDocking)
+                {
+                    ImGui::End();
+                }
+
+                ImGuiIO& io = ImGui::GetIO();
+                io.DisplaySize =
+                    ImVec2(getGraphicsContext().GetWindow()->GetWidth(), getGraphicsContext().GetWindow()->GetHeight());
+
+                ImGui::Render();
+
+                ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+                if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+                {
+                    GLFWwindow* backupCurrentContext = glfwGetCurrentContext();
+                    ImGui::UpdatePlatformWindows();
+                    ImGui::RenderPlatformWindowsDefault();
+                    glfwMakeContextCurrent(backupCurrentContext);
+                }
+            }
+
+            void shutdown()
+            {
+                ImGui_ImplOpenGL3_Shutdown();
+                ImGui_ImplGlfw_Shutdown();
+                ImGui::DestroyContext();
+            }
+        } // namespace imgui
+
+        void init(const RendererInitInfo& initInfo)
+        {
+            g_GraphicsContext.Init(initInfo.Window);
             g_RenderContext = std::make_shared<RenderContext>();
+
+            imgui::init(initInfo.EnableImGuiDocking);
+
+            g_RendererInit = true;
         }
 
+        void beginImGui() { imgui::beginFrame(); }
+
+        void endImGui() { imgui::endFrame(); }
+
         void present() { g_GraphicsContext.SwapBuffers(); }
+
+        void shutdown()
+        {
+            imgui::shutdown();
+            g_GraphicsContext.Shutdown();
+        }
+
+        bool isLoaded() { return g_RendererInit; }
 
         GraphicsContext& getGraphicsContext() { return g_GraphicsContext; }
         RenderContext&   getRenderContext() { return *g_RenderContext; }
@@ -2927,5 +3099,13 @@ namespace vgfw
         return true;
     }
 
-    void shutdown() { log::shutdown(); }
+    void shutdown()
+    {
+        if (renderer::isLoaded())
+        {
+            renderer::shutdown();
+        }
+
+        log::shutdown();
+    }
 } // namespace vgfw

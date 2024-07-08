@@ -2,7 +2,7 @@
 set_project("vgfw")
 
 -- set project version
-set_version("0.1.0")
+set_version("1.0.0")
 
 -- set language version: C++ 20
 set_languages("cxx20")
@@ -35,6 +35,7 @@ add_repositories("my-xmake-repo https://github.com/zzxzzk115/xmake-repo.git dev"
 
 -- add requirements
 add_requires("fg", "glad", "glfw", "glm", "spdlog", "stb")
+add_requires("imgui v1.90.8-docking", {configs = {glfw = true, opengl3 = true, wchar32 = true}})
 
 -- target defination, name: vgfw
 target("vgfw")
@@ -54,6 +55,7 @@ target("vgfw")
     add_packages("glad", { public = true })
     add_packages("glfw", { public = true })
     add_packages("glm", { public = true })
+    add_packages("imgui", { public = true })
     add_packages("spdlog", { public = true })
     add_packages("stb", { public = true })
 
