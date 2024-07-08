@@ -108,6 +108,8 @@ namespace vgfw
     {
         template<typename T, typename... Rest>
         void hashCombine(std::size_t& seed, const T& v, const Rest&... rest);
+
+        std::string readFileAllText(const std::filesystem::path& filePath);
     } // namespace utils
 
     namespace math
@@ -1058,12 +1060,15 @@ namespace vgfw
             glm::vec2 TexCoords;
         };
 
-        struct MeshInstance
+        struct MeshPrimitive
         {
             std::string           Name;
             std::vector<Vertex>   Vertices;
             std::vector<uint32_t> Indices;
             int                   MaterialIndex {-1};
+
+            std::shared_ptr<renderer::IndexBuffer>  IndexBuf {nullptr};
+            std::shared_ptr<renderer::VertexBuffer> VertexBuf {nullptr};
         };
 
         struct Material
@@ -1074,7 +1079,7 @@ namespace vgfw
 
         struct Model
         {
-            std::vector<MeshInstance>                         Meshes;
+            std::vector<MeshPrimitive>                        Meshes;
             std::unordered_map<int, vgfw::renderer::Texture*> TextureMap;
             std::unordered_map<int, Material>                 MaterialMap;
         };
@@ -1152,6 +1157,21 @@ namespace vgfw
             // https://stackoverflow.com/questions/2590677/how-do-i-combine-hash-values-in-c0x
             seed ^= std::hash<T> {}(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
             (hashCombine(seed, rest), ...);
+        }
+
+        std::string readFileAllText(const std::filesystem::path& filePath)
+        {
+            std::ifstream fileStream(filePath);
+
+            if (!fileStream.is_open())
+            {
+                throw std::runtime_error("Could not open file: " + filePath.string());
+            }
+
+            std::stringstream buffer;
+            buffer << fileStream.rdbuf();
+
+            return buffer.str();
         }
     } // namespace utils
 
@@ -3158,12 +3178,14 @@ namespace vgfw
             const auto& shapes    = reader.GetShapes();
             const auto& materials = reader.GetMaterials();
 
+            auto vertexFormat = renderer::VertexFormat::Builder {}.BuildDefault();
+
             // Loop over shapes
             for (const auto& shape : shapes)
             {
-                auto& meshInstance = model.Meshes.emplace_back();
+                auto& meshPrimitive = model.Meshes.emplace_back();
 
-                meshInstance.Name = shape.name;
+                meshPrimitive.Name = shape.name;
 
                 // Loop over faces(polygon)
                 size_t indexOffset = 0;
@@ -3174,7 +3196,7 @@ namespace vgfw
                     // Loop over vertices in the face.
                     for (size_t v = 0; v < fv; v++)
                     {
-                        auto& vertex = meshInstance.Vertices.emplace_back();
+                        auto& vertex = meshPrimitive.Vertices.emplace_back();
 
                         // access to vertex
                         tinyobj::index_t idx = shape.mesh.indices[indexOffset + v];
@@ -3203,7 +3225,20 @@ namespace vgfw
                             vertex.TexCoords = {tx, ty};
                         }
 
-                        meshInstance.Indices.push_back(meshInstance.Indices.size());
+                        meshPrimitive.Indices.push_back(meshPrimitive.Indices.size());
+
+                        // Load index buffer & vertex buffer
+                        auto indexBuf = renderer::getRenderContext().CreateIndexBuffer(
+                            renderer::IndexType::UInt32, meshPrimitive.Indices.size(), meshPrimitive.Indices.data());
+                        auto vertexBuf = renderer::getRenderContext().CreateVertexBuffer(
+                            vertexFormat->GetStride(), meshPrimitive.Vertices.size(), meshPrimitive.Vertices.data());
+
+                        meshPrimitive.IndexBuf = std::shared_ptr<renderer::IndexBuffer>(
+                            new renderer::IndexBuffer {std::move(indexBuf)},
+                            renderer::RenderContext::ResourceDeleter {renderer::getRenderContext()});
+                        meshPrimitive.VertexBuf = std::shared_ptr<renderer::VertexBuffer>(
+                            new renderer::VertexBuffer {std::move(vertexBuf)},
+                            renderer::RenderContext::ResourceDeleter {renderer::getRenderContext()});
                     }
                     indexOffset += fv;
                 }
@@ -3280,26 +3315,49 @@ namespace vgfw
                 model.MaterialMap[&material - &gltfModel.materials[0]] = mat;
             }
 
+            auto vertexFormat = renderer::VertexFormat::Builder {}.BuildDefault();
+
             // Load meshes
             for (const auto& mesh : gltfModel.meshes)
             {
-                auto& meshInstance = model.Meshes.emplace_back();
-                meshInstance.Name  = mesh.name;
-
                 for (const auto& primitive : mesh.primitives)
                 {
                     if (primitive.indices < 0)
                         continue;
 
+                    auto& meshPrimitive = model.Meshes.emplace_back();
+                    meshPrimitive.Name  = mesh.name;
+
                     const tinygltf::Accessor&   indexAccessor   = gltfModel.accessors[primitive.indices];
                     const tinygltf::BufferView& indexBufferView = gltfModel.bufferViews[indexAccessor.bufferView];
                     const tinygltf::Buffer&     indexBuffer     = gltfModel.buffers[indexBufferView.buffer];
 
-                    for (size_t i = 0; i < indexAccessor.count; ++i)
+                    const void* indicesData =
+                        indexBuffer.data.data() + indexBufferView.byteOffset + indexAccessor.byteOffset;
+
+                    switch (indexAccessor.componentType)
                     {
-                        const uint16_t* indices = reinterpret_cast<const uint16_t*>(
-                            indexBuffer.data.data() + indexBufferView.byteOffset + indexAccessor.byteOffset);
-                        meshInstance.Indices.push_back(indices[i]);
+                        case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
+                            for (size_t i = 0; i < indexAccessor.count; ++i)
+                            {
+                                const uint32_t* indices = reinterpret_cast<const uint32_t*>(indicesData);
+                                meshPrimitive.Indices.push_back(indices[i]);
+                            }
+                            break;
+                        case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
+                            for (size_t i = 0; i < indexAccessor.count; ++i)
+                            {
+                                const uint16_t* indices = reinterpret_cast<const uint16_t*>(indicesData);
+                                meshPrimitive.Indices.push_back(indices[i]);
+                            }
+                            break;
+                        case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
+                            for (size_t i = 0; i < indexAccessor.count; ++i)
+                            {
+                                const uint8_t* indices = reinterpret_cast<const uint8_t*>(indicesData);
+                                meshPrimitive.Indices.push_back(indices[i]);
+                            }
+                            break;
                     }
 
                     const tinygltf::Accessor& positionAccessor =
@@ -3311,8 +3369,8 @@ namespace vgfw
                     {
                         const float* positions = reinterpret_cast<const float*>(
                             positionBuffer.data.data() + positionBufferView.byteOffset + positionAccessor.byteOffset);
-                        meshInstance.Vertices.emplace_back();
-                        meshInstance.Vertices.back().Position = {
+                        meshPrimitive.Vertices.emplace_back();
+                        meshPrimitive.Vertices.back().Position = {
                             positions[3 * i + 0], positions[3 * i + 1], positions[3 * i + 2]};
                     }
 
@@ -3327,7 +3385,7 @@ namespace vgfw
                         {
                             const float* normals = reinterpret_cast<const float*>(
                                 normalBuffer.data.data() + normalBufferView.byteOffset + normalAccessor.byteOffset);
-                            meshInstance.Vertices[i].Normal = {
+                            meshPrimitive.Vertices[i].Normal = {
                                 normals[3 * i + 0], normals[3 * i + 1], normals[3 * i + 2]};
                         }
                     }
@@ -3345,13 +3403,26 @@ namespace vgfw
                             const float* texCoords = reinterpret_cast<const float*>(texCoordBuffer.data.data() +
                                                                                     texCoordBufferView.byteOffset +
                                                                                     texCoordAccessor.byteOffset);
-                            meshInstance.Vertices[i].TexCoords = {texCoords[2 * i + 0], texCoords[2 * i + 1]};
+                            meshPrimitive.Vertices[i].TexCoords = {texCoords[2 * i + 0], texCoords[2 * i + 1]};
                         }
                     }
 
                     // TODO: Additional attributes such as tangents, joint indices, and weights can be added here
 
-                    meshInstance.MaterialIndex = primitive.material;
+                    meshPrimitive.MaterialIndex = primitive.material;
+
+                    // Load index buffer & vertex buffer
+                    auto indexBuf = renderer::getRenderContext().CreateIndexBuffer(
+                        renderer::IndexType::UInt32, meshPrimitive.Indices.size(), meshPrimitive.Indices.data());
+                    auto vertexBuf = renderer::getRenderContext().CreateVertexBuffer(
+                        vertexFormat->GetStride(), meshPrimitive.Vertices.size(), meshPrimitive.Vertices.data());
+
+                    meshPrimitive.IndexBuf = std::shared_ptr<renderer::IndexBuffer>(
+                        new renderer::IndexBuffer {std::move(indexBuf)},
+                        renderer::RenderContext::ResourceDeleter {renderer::getRenderContext()});
+                    meshPrimitive.VertexBuf = std::shared_ptr<renderer::VertexBuffer>(
+                        new renderer::VertexBuffer {std::move(vertexBuf)},
+                        renderer::RenderContext::ResourceDeleter {renderer::getRenderContext()});
                 }
             }
 
