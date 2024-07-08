@@ -22,24 +22,24 @@ target("05-deferred")
         os.cp("$(scriptdir)/assets", target:targetdir())
     end)
 
-    -- preprocess shaders (handle #include)
+    -- Preprocess shaders (handle #include)
     before_build(function (target)
+        -- Helper function to preprocess shaders
+        local function preprocess_shaders(shaders_dir, target_dir, extension)
+            for _, shader in ipairs(os.files(path.join(shaders_dir, "**." .. extension))) do
+                local output_path = path.join(target_dir, path.filename(shader))
+                print("Preprocessing shader: " .. shader .. " -> " .. output_path)
+                os.execv("glslc", {"-I", shaders_dir, "-E", shader, "-o", output_path})
+            end
+        end
+
         local shaders_dir = "$(scriptdir)/shaders"
-        
-        os.mkdir(path.join(target:targetdir(), "shaders"))
+        local target_shaders_dir = path.join(target:targetdir(), "shaders")
 
-        for _, shader in ipairs(os.files(path.join(shaders_dir, "**.vert"))) do
-            print("compiling shader: " .. path.filename(shader))
-            os.execv("glslc", {"-I", shaders_dir, "-E", shader, "-o", path.join(target:targetdir(), "shaders", path.filename(shader))})
-        end
+        os.mkdir(target_shaders_dir)
 
-        for _, shader in ipairs(os.files(path.join(shaders_dir, "**.frag"))) do
-            print("compiling shader: " .. path.filename(shader))
-            os.execv("glslc", {"-I", shaders_dir, "-E", shader, "-o", path.join(target:targetdir(), "shaders", path.filename(shader))})
-        end
-
-        for _, shader in ipairs(os.files(path.join(shaders_dir, "**.geom"))) do
-            print("compiling shader: " .. path.filename(shader))
-            os.execv("glslc", {"-I", shaders_dir, "-E", shader, "-o", path.join(target:targetdir(), "shaders", path.filename(shader))})
-        end
+        -- Preprocess vertex, fragment, and geometry shaders
+        preprocess_shaders(shaders_dir, target_shaders_dir, "vert")
+        preprocess_shaders(shaders_dir, target_shaders_dir, "frag")
+        preprocess_shaders(shaders_dir, target_shaders_dir, "geom")
     end)
