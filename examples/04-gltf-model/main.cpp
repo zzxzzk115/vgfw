@@ -35,32 +35,91 @@ layout(location = 2) in vec3 vNormal;
 
 layout(location = 0) out vec4 FragColor;
 
+layout(binding = 0) uniform sampler2D baseColor;
+layout(binding = 1) uniform sampler2D metallicRoughness;
+
 layout(location = 3) uniform vec3 lightPos;
 layout(location = 4) uniform vec3 viewPos;
 layout(location = 5) uniform vec3 lightColor;
 layout(location = 6) uniform vec3 objectColor;
 
+
+// Cook-Torrance GGX (Trowbridge-Reitz) Distribution
+float DistributionGGX(vec3 N, vec3 H, float roughness)
+{
+    float a = roughness * roughness;
+    float a2 = a * a;
+    float NdotH = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH * NdotH;
+
+    float num = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = 3.1415926535897932384626433832795 * denom * denom;
+
+    return num / max(denom, 0.001); // prevent divide by zero for roughness=0.0 and NdotH=1.0
+}
+
+float GeometrySmith_GGX(float NdotX, float roughness)
+{
+    float a = roughness * roughness;
+    float a2 = a * a;
+
+    float num = NdotX;
+    float denom = NdotX * (1.0 - a) + a;
+
+    return num / denom;
+}
+
+// Smith's GGX Visibility Function (Schlick-Beckmann approximation)
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
+{
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx2 = GeometrySmith_GGX(NdotV, roughness);
+    float ggx1 = GeometrySmith_GGX(NdotL, roughness);
+
+    return ggx1 * ggx2;
+}
+
+// Schlick's approximation for the Fresnel term
+vec3 fresnelSchlick(float cosTheta, vec3 F0)
+{
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
 void main()
 {
+    vec2 uv = vec2(vTexCoords.x, 1.0 - vTexCoords.y);
+
+    // Retrieve material properties from metallicRoughness texture
+    vec4 texSample = texture(metallicRoughness, uv);
+    float metallic = texSample.b;
+    float roughness = texSample.g;
+
     // Ambient
-    float ambientStrength = 0.1;
-    vec3 ambient = ambientStrength * lightColor;
+    vec3 ambient = lightColor * 0.03;
 
     // Diffuse
-    vec3 norm = normalize(vNormal);
+    vec3 norm = normalize(vNormal); // Use vertex normal directly
     vec3 lightDir = normalize(lightPos - vFragPos);
     float diff = max(dot(norm, lightDir), 0.0);
     vec3 diffuse = diff * lightColor;
 
-    // Specular
-    float specularStrength = 0.5;
+    // Specular (Cook-Torrance BRDF)
     vec3 viewDir = normalize(viewPos - vFragPos);
-    vec3 reflectDir = reflect(-lightDir, norm);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
-    vec3 specular = specularStrength * spec * lightColor;
+    vec3 halfwayDir = normalize(lightDir + viewDir);
 
-    vec3 result = (ambient + diffuse + specular) * objectColor;
-    FragColor = vec4(result, 1.0);
+    float NDF = DistributionGGX(norm, halfwayDir, roughness);
+    float G = GeometrySmith(norm, viewDir, lightDir, roughness);
+    vec3 F0 = vec3(0.04); // default specular reflectance
+    vec3 F = fresnelSchlick(max(dot(halfwayDir, viewDir), 0.0), F0);
+    vec3 specular = (NDF * G * F) / (4.0 * max(dot(norm, viewDir), 0.0) * max(dot(norm, lightDir), 0.0));
+
+    // Combine ambient, diffuse, and specular components
+    vec3 result = (ambient + (1.0 - metallic) * diffuse + metallic * specular) * objectColor;
+
+    // Output final color with baseColor texture
+    FragColor = texture(baseColor, uv) * vec4(result, 1.0);
 }
 )";
 
@@ -114,6 +173,12 @@ int main()
         return -1;
     }
 
+    // Get textures
+    auto* baseColorTexture =
+        suzanneModel.TextureMap[suzanneModel.MaterialMap[suzanneModel.Meshes[0].MaterialIndex].BaseColorTextureIndex];
+    auto* metallicRoughnessTexture =
+        suzanneModel.TextureMap[suzanneModel.MaterialMap[suzanneModel.Meshes[0].MaterialIndex].BaseColorTextureIndex];
+
     // Create index buffer & vertex buffer
     auto indexBuffer  = rc.CreateIndexBuffer(vgfw::renderer::IndexType::UInt32,
                                             suzanneModel.Meshes[0].Indices.size(),
@@ -164,6 +229,8 @@ int main()
             .SetUniformVec3("viewPos", viewPos)
             .SetUniformVec3("lightColor", lightColor)
             .SetUniformVec3("objectColor", objectColor)
+            .BindTexture(0, *baseColorTexture)
+            .BindTexture(1, *metallicRoughnessTexture)
             .Draw(vertexBuffer,
                   indexBuffer,
                   suzanneModel.Meshes[0].Indices.size(),

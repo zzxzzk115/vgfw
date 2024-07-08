@@ -1063,11 +1063,20 @@ namespace vgfw
             std::string           Name;
             std::vector<Vertex>   Vertices;
             std::vector<uint32_t> Indices;
+            int                   MaterialIndex {-1};
+        };
+
+        struct Material
+        {
+            int BaseColorTextureIndex {-1};
+            int MetallicRoughnessTextureIndex {-1};
         };
 
         struct Model
         {
-            std::vector<MeshInstance> Meshes;
+            std::vector<MeshInstance>                         Meshes;
+            std::unordered_map<int, vgfw::renderer::Texture*> TextureMap;
+            std::unordered_map<int, Material>                 MaterialMap;
         };
     } // namespace resource
 
@@ -2512,6 +2521,8 @@ namespace vgfw
                 assert(infoLogLength > 0);
                 std::string infoLog("", infoLogLength);
                 glGetShaderInfoLog(id, infoLogLength, nullptr, infoLog.data());
+
+                VGFW_ERROR("[ShaderInfoLog] {0}", infoLog);
                 throw std::runtime_error {infoLog};
             };
 
@@ -3242,6 +3253,34 @@ namespace vgfw
                 return false;
             }
 
+            // Load textures
+            for (const auto& texture : gltfModel.textures)
+            {
+                const auto&              image = gltfModel.images[texture.source];
+                vgfw::renderer::Texture* loadedTexture =
+                    vgfw::io::load(modelPath.parent_path() / image.uri, renderer::getRenderContext());
+                model.TextureMap[texture.source] = loadedTexture;
+            }
+
+            // Load materials
+            for (const auto& material : gltfModel.materials)
+            {
+                resource::Material mat {};
+
+                if (material.values.find("baseColorTexture") != material.values.end())
+                {
+                    int textureIndex          = material.values.at("baseColorTexture").TextureIndex();
+                    mat.BaseColorTextureIndex = textureIndex;
+                }
+                if (material.values.find("metallicRoughnessTexture") != material.values.end())
+                {
+                    int textureIndex                  = material.values.at("metallicRoughnessTexture").TextureIndex();
+                    mat.MetallicRoughnessTextureIndex = textureIndex;
+                }
+                model.MaterialMap[&material - &gltfModel.materials[0]] = mat;
+            }
+
+            // Load meshes
             for (const auto& mesh : gltfModel.meshes)
             {
                 auto& meshInstance = model.Meshes.emplace_back();
@@ -3310,7 +3349,9 @@ namespace vgfw
                         }
                     }
 
-                    // Additional attributes such as tangents, joint indices, and weights can be added here
+                    // TODO: Additional attributes such as tangents, joint indices, and weights can be added here
+
+                    meshInstance.MaterialIndex = primitive.material;
                 }
             }
 
