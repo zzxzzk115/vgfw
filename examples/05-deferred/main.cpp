@@ -72,7 +72,7 @@ int main()
 
         // Create the projection matrix
         glm::mat4 projection =
-            glm::perspective(glm::radians(fov), window->GetWidth() * 1.0f / window->GetHeight(), 0.1f, 10000.0f);
+            glm::perspective(glm::radians(fov), window->GetWidth() * 1.0f / window->GetHeight(), 1.0f, 10000.0f);
 
         // Render
         rc.BeginRendering({.Extent = {.Width = window->GetWidth(), .Height = window->GetHeight()}},
