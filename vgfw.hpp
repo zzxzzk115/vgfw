@@ -96,6 +96,9 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
+
 namespace vgfw
 {
     namespace utils
@@ -1043,6 +1046,22 @@ namespace vgfw
         RenderContext&   getRenderContext();
     } // namespace renderer
 
+    namespace resource
+    {
+        struct Vertex
+        {
+            glm::vec3 Position;
+            glm::vec3 Normal;
+            glm::vec2 TexCoords;
+        };
+
+        struct Model
+        {
+            std::vector<Vertex>   Vertices;
+            std::vector<uint32_t> Indices;
+        };
+    } // namespace resource
+
     namespace io
     {
         static std::unordered_map<size_t, renderer::Texture*> g_TextureCache;
@@ -1051,6 +1070,8 @@ namespace vgfw
         load(const std::filesystem::path& texturePath, renderer::RenderContext& rc, bool flip = true);
 
         void release(const std::filesystem::path& texturePath, renderer::Texture& texture, renderer::RenderContext& rc);
+
+        bool load(const std::filesystem::path& modelPath, resource::Model& model);
     } // namespace io
 
     bool init();
@@ -3089,6 +3110,82 @@ namespace vgfw
                 rc.Destroy(texture);
                 g_TextureCache.erase(h);
             }
+        }
+
+        bool load(const std::filesystem::path& modelPath, resource::Model& model)
+        {
+            std::string              inputfile = modelPath.generic_string();
+            tinyobj::ObjReaderConfig readerConfig;
+            readerConfig.mtl_search_path = "./"; // Path to material files
+
+            tinyobj::ObjReader reader;
+
+            if (!reader.ParseFromFile(inputfile, readerConfig))
+            {
+                if (!reader.Error().empty())
+                {
+                    VGFW_ERROR("[TinyObjReader] {0}", reader.Error());
+                }
+                return false;
+            }
+
+            if (!reader.Warning().empty())
+            {
+                VGFW_WARN("[TinyObjReader] {0}", reader.Warning());
+            }
+
+            const auto& attrib    = reader.GetAttrib();
+            const auto& shapes    = reader.GetShapes();
+            const auto& materials = reader.GetMaterials();
+
+            // Loop over shapes
+            for (const auto& shape : shapes)
+            {
+                // Loop over faces(polygon)
+                size_t indexOffset = 0;
+                for (size_t f = 0; f < shape.mesh.num_face_vertices.size(); f++)
+                {
+                    size_t fv = static_cast<size_t>(shape.mesh.num_face_vertices[f]);
+
+                    // Loop over vertices in the face.
+                    for (size_t v = 0; v < fv; v++)
+                    {
+                        auto& vertex = model.Vertices.emplace_back();
+
+                        // access to vertex
+                        tinyobj::index_t idx = shape.mesh.indices[indexOffset + v];
+                        tinyobj::real_t  vx  = attrib.vertices[3 * static_cast<size_t>(idx.vertex_index) + 0];
+                        tinyobj::real_t  vy  = attrib.vertices[3 * static_cast<size_t>(idx.vertex_index) + 1];
+                        tinyobj::real_t  vz  = attrib.vertices[3 * static_cast<size_t>(idx.vertex_index) + 2];
+
+                        vertex.Position = {vx, vy, vz};
+
+                        // Check if `normal_index` is zero or positive. negative = no normal data
+                        if (idx.normal_index >= 0)
+                        {
+                            tinyobj::real_t nx = attrib.normals[3 * static_cast<size_t>(idx.normal_index) + 0];
+                            tinyobj::real_t ny = attrib.normals[3 * static_cast<size_t>(idx.normal_index) + 1];
+                            tinyobj::real_t nz = attrib.normals[3 * static_cast<size_t>(idx.normal_index) + 2];
+
+                            vertex.Normal = {nx, ny, nz};
+                        }
+
+                        // Check if `texcoord_index` is zero or positive. negative = no texcoord data
+                        if (idx.texcoord_index >= 0)
+                        {
+                            tinyobj::real_t tx = attrib.texcoords[2 * static_cast<size_t>(idx.texcoord_index) + 0];
+                            tinyobj::real_t ty = attrib.texcoords[2 * static_cast<size_t>(idx.texcoord_index) + 1];
+
+                            vertex.TexCoords = {tx, ty};
+                        }
+
+                        model.Indices.push_back(model.Indices.size());
+                    }
+                    indexOffset += fv;
+                }
+            }
+
+            return true;
         }
     } // namespace io
 

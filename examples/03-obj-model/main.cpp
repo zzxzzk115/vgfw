@@ -6,9 +6,12 @@ const char* vertexShaderSource = R"(
 #version 450
 
 layout(location = 0) in vec3 aPos;
+layout(location = 1) in vec3 aNormal;
 layout(location = 2) in vec2 aTexCoords;
 
 layout(location = 0) out vec2 vTexCoords;
+layout(location = 1) out vec3 vFragPos;
+layout(location = 2) out vec3 vNormal;
 
 layout(location = 0) uniform mat4 model;
 layout(location = 1) uniform mat4 view;
@@ -18,6 +21,8 @@ void main()
 {
     gl_Position = projection * view * model * vec4(aPos, 1.0);
     vTexCoords = aTexCoords;
+    vFragPos = vec3(model * vec4(aPos, 1.0));
+    vNormal = mat3(transpose(inverse(model))) * aNormal;
 }
 )";
 
@@ -25,14 +30,39 @@ const char* fragmentShaderSource = R"(
 #version 450
 
 layout(location = 0) in vec2 vTexCoords;
+layout(location = 1) in vec3 vFragPos;
+layout(location = 2) in vec3 vNormal;
 
 layout(location = 0) out vec4 FragColor;
 
-layout(binding = 0) uniform sampler2D cubeTexture;
+layout(binding = 0) uniform sampler2D spotTexture;
+
+layout(location = 3) uniform vec3 lightPos;
+layout(location = 4) uniform vec3 viewPos;
+layout(location = 5) uniform vec3 lightColor;
+layout(location = 6) uniform vec3 objectColor;
 
 void main()
 {
-    FragColor = vec4(texture(cubeTexture, vTexCoords).rgb, 1.0);
+    // Ambient
+    float ambientStrength = 0.1;
+    vec3 ambient = ambientStrength * lightColor;
+
+    // Diffuse
+    vec3 norm = normalize(vNormal);
+    vec3 lightDir = normalize(lightPos - vFragPos);
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 diffuse = diff * lightColor;
+
+    // Specular
+    float specularStrength = 0.5;
+    vec3 viewDir = normalize(viewPos - vFragPos);
+    vec3 reflectDir = reflect(-lightDir, norm);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
+    vec3 specular = specularStrength * spec * lightColor;
+
+    vec3 result = (ambient + diffuse + specular) * objectColor;
+    FragColor = texture(spotTexture, vTexCoords) * vec4(result, 1.0);
 }
 )";
 
@@ -46,7 +76,7 @@ int main()
     }
 
     // Create a window instance
-    auto window = vgfw::window::create({.Title = "02-cube", .EnableMSAA = true, .AASample = 8});
+    auto window = vgfw::window::create({.Title = "03-obj-model", .EnableMSAA = true, .AASample = 8});
 
     // Init renderer
     vgfw::renderer::init({.Window = window});
@@ -55,12 +85,7 @@ int main()
     auto& rc = vgfw::renderer::getRenderContext();
 
     // Build vertex format
-    auto vertexFormat = vgfw::renderer::VertexFormat::Builder {}
-                            .SetAttribute(vgfw::renderer::AttributeLocation::Position,
-                                          {.VertType = vgfw::renderer::VertexAttribute::Type::Float3, .Offset = 0})
-                            .SetAttribute(vgfw::renderer::AttributeLocation::TexCoords,
-                                          {.VertType = vgfw::renderer::VertexAttribute::Type::Float2, .Offset = 12})
-                            .Build();
+    auto vertexFormat = vgfw::renderer::VertexFormat::Builder {}.BuildDefault();
 
     // Get vertex array object
     auto vao = rc.GetVertexArray(vertexFormat->GetAttributes());
@@ -84,62 +109,33 @@ int main()
                                 .SetShaderProgram(program)
                                 .Build();
 
-    // clang-format off
-    float vertices[] = {
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-    };
-    // clang-format on
+    // Load model
+    vgfw::resource::Model spotModel {};
+    if (!vgfw::io::load("assets/models/spot.obj", spotModel))
+    {
+        return -1;
+    }
 
     // Create index buffer & vertex buffer
-    auto vertexBuffer = rc.CreateVertexBuffer(vertexFormat->GetStride(), 36, vertices);
+    auto indexBuffer =
+        rc.CreateIndexBuffer(vgfw::renderer::IndexType::UInt32, spotModel.Indices.size(), spotModel.Indices.data());
+    auto vertexBuffer =
+        rc.CreateVertexBuffer(vertexFormat->GetStride(), spotModel.Vertices.size(), spotModel.Vertices.data());
 
     // Load texture
-    auto* texture = vgfw::io::load("assets/textures/awesomeface.png", rc);
+    auto* spotTexture = vgfw::io::load("assets/models/spot_texture.png", rc);
 
     // Start time
     auto startTime = std::chrono::high_resolution_clock::now();
 
-    float fov = 60.0f;
+    // Camera properties
+    float     fov = 60.0f;
+    glm::vec3 viewPos(0.0f, 0.0f, 3.0f);
+
+    // Light properties
+    glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+    glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
+    glm::vec3 objectColor(1.0f, 1.0f, 1.0f);
 
     // Main loop
     while (!window->ShouldClose())
@@ -154,24 +150,34 @@ int main()
         glm::mat4 model = glm::rotate(glm::mat4(1.0f), time, glm::vec3(0.5f, 1.0f, 0.0f));
 
         // Create the view matrix
-        glm::mat4 view = glm::lookAt(glm::vec3(1.5f, 1.5f, 1.5f), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 view = glm::lookAt(viewPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
         // Create the projection matrix
         glm::mat4 projection =
             glm::perspective(glm::radians(fov), window->GetWidth() * 1.0f / window->GetHeight(), 0.1f, 100.0f);
 
         // Render
-        rc.BeginRendering({.Extent = {.Width = window->GetWidth(), .Height = window->GetHeight()}}, glm::vec4 {0.2f, 0.3f, 0.3f, 1.0f}, 1.0f);
+        rc.BeginRendering({.Extent = {.Width = window->GetWidth(), .Height = window->GetHeight()}},
+                          glm::vec4 {0.2f, 0.3f, 0.3f, 1.0f},
+                          1.0f);
         rc.BindGraphicsPipeline(graphicsPipeline)
             .SetUniformMat4("model", model)
             .SetUniformMat4("view", view)
             .SetUniformMat4("projection", projection)
-            .BindTexture(0, *texture)
-            .Draw(vertexBuffer, {}, 0, 36);
+            .SetUniformVec3("lightPos", lightPos)
+            .SetUniformVec3("viewPos", viewPos)
+            .SetUniformVec3("lightColor", lightColor)
+            .SetUniformVec3("objectColor", objectColor)
+            .BindTexture(0, *spotTexture)
+            .Draw(vertexBuffer, indexBuffer, spotModel.Indices.size(), spotModel.Vertices.size());
 
         vgfw::renderer::beginImGui();
-        ImGui::Begin("Cube");
+        ImGui::Begin("OBJ Model");
         ImGui::SliderFloat("Camera FOV", &fov, 1.0f, 179.0f);
+        ImGui::DragFloat3("Camera Position", glm::value_ptr(viewPos));
+        ImGui::DragFloat3("Light Position", glm::value_ptr(lightPos));
+        ImGui::ColorEdit3("Light Color", glm::value_ptr(lightColor));
+        ImGui::ColorEdit3("Object Color", glm::value_ptr(objectColor));
         ImGui::End();
         vgfw::renderer::endImGui();
 
@@ -179,6 +185,7 @@ int main()
     }
 
     // Cleanup
+    rc.Destroy(indexBuffer);
     rc.Destroy(vertexBuffer);
     vgfw::shutdown();
 

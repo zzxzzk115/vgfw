@@ -34,7 +34,7 @@ add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode"})
 add_repositories("my-xmake-repo https://github.com/zzxzzk115/xmake-repo.git dev")
 
 -- add requirements
-add_requires("fg", "glad", "glfw", "glm", "spdlog", "stb")
+add_requires("fg", "glad", "glfw", "glm", "spdlog", "stb", "tinyobjloader")
 add_requires("imgui v1.90.8-docking", {configs = {glfw = true, opengl3 = true, wchar32 = true}})
 
 -- target defination, name: vgfw
@@ -58,6 +58,7 @@ target("vgfw")
     add_packages("imgui", { public = true })
     add_packages("spdlog", { public = true })
     add_packages("stb", { public = true })
+    add_packages("tinyobjloader", { public = true })
 
 -- if build examples, then include examples
 if has_config("examples") then
