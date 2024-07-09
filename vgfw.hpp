@@ -1087,6 +1087,10 @@ namespace vgfw
         {
             int baseColorTextureIndex {-1};
             int metallicRoughnessTextureIndex {-1};
+
+            int normalTextureIndex {-1};
+            int occlusionTextureIndex {-1};
+            int emissiveTextureIndex {-1};
         };
 
         struct Model
@@ -3397,6 +3401,11 @@ namespace vgfw
                     int textureIndex                  = material.values.at("metallicRoughnessTexture").TextureIndex();
                     mat.metallicRoughnessTextureIndex = textureIndex;
                 }
+
+                mat.normalTextureIndex    = material.normalTexture.index;
+                mat.occlusionTextureIndex = material.occlusionTexture.index;
+                mat.emissiveTextureIndex  = material.emissiveTexture.index;
+
                 model.materialMap[&material - &gltfModel.materials[0]] = mat;
             }
 
