@@ -5,6 +5,7 @@
 layout(location = 0) in vec2 vTexCoords;
 layout(location = 1) in vec3 vFragPos;
 layout(location = 2) in vec3 vNormal;
+layout(location = 3) in vec4 vTangent;
 
 layout(location = 0) out vec4 FragColor;
 

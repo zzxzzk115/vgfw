@@ -81,14 +81,18 @@ int main()
     // Init renderer
     vgfw::renderer::init({.window = window});
 
+    // Load model
+    vgfw::resource::Model spotModel {};
+    if (!vgfw::io::load("assets/models/spot.obj", spotModel))
+    {
+        return -1;
+    }
+
     // Get graphics & render context
     auto& rc = vgfw::renderer::getRenderContext();
 
-    // Build vertex format
-    auto vertexFormat = vgfw::renderer::VertexFormat::Builder {}.buildDefault();
-
     // Get vertex array object
-    auto vao = rc.getVertexArray(vertexFormat->getAttributes());
+    auto vao = rc.getVertexArray(spotModel.meshPrimitives[0].vertexFormat->getAttributes());
 
     // Create shader program
     auto program = rc.createGraphicsProgram(vertexShaderSource, fragmentShaderSource);
@@ -108,21 +112,6 @@ int main()
                                 .setVAO(vao)
                                 .setShaderProgram(program)
                                 .build();
-
-    // Load model
-    vgfw::resource::Model spotModel {};
-    if (!vgfw::io::load("assets/models/spot.obj", spotModel))
-    {
-        return -1;
-    }
-
-    // Create index buffer & vertex buffer
-    auto indexBuffer  = rc.createIndexBuffer(vgfw::renderer::IndexType::UInt32,
-                                            spotModel.meshPrimitives[0].indices.size(),
-                                            spotModel.meshPrimitives[0].indices.data());
-    auto vertexBuffer = rc.createVertexBuffer(vertexFormat->getStride(),
-                                              spotModel.meshPrimitives[0].vertices.size(),
-                                              spotModel.meshPrimitives[0].vertices.data());
 
     // Load texture
     auto* spotTexture = vgfw::io::load("assets/models/spot_texture.png", rc);
@@ -171,10 +160,10 @@ int main()
             .setUniformVec3("lightColor", lightColor)
             .setUniformVec3("objectColor", objectColor)
             .bindTexture(0, *spotTexture)
-            .draw(vertexBuffer,
-                  indexBuffer,
-                  spotModel.meshPrimitives[0].indices.size(),
-                  spotModel.meshPrimitives[0].vertices.size());
+            .draw(*spotModel.meshPrimitives[0].vertexBuffer,
+                  *spotModel.meshPrimitives[0].indexBuffer,
+                  spotModel.meshPrimitives[0].indexCount,
+                  spotModel.meshPrimitives[0].vertexCount);
 
         vgfw::renderer::beginImGui();
         ImGui::Begin("OBJ Model");
@@ -190,8 +179,6 @@ int main()
     }
 
     // Cleanup
-    rc.destroy(indexBuffer);
-    rc.destroy(vertexBuffer);
     vgfw::shutdown();
 
     return 0;

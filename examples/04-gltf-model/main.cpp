@@ -138,14 +138,18 @@ int main()
     // Init renderer
     vgfw::renderer::init({.window = window});
 
+    // Load model
+    vgfw::resource::Model suzanneModel {};
+    if (!vgfw::io::load("assets/models/Suzanne.gltf", suzanneModel))
+    {
+        return -1;
+    }
+
     // Get graphics & render context
     auto& rc = vgfw::renderer::getRenderContext();
 
-    // Build vertex format
-    auto vertexFormat = vgfw::renderer::VertexFormat::Builder {}.buildDefault();
-
     // Get vertex array object
-    auto vao = rc.getVertexArray(vertexFormat->getAttributes());
+    auto vao = rc.getVertexArray(suzanneModel.meshPrimitives[0].vertexFormat->getAttributes());
 
     // Create shader program
     auto program = rc.createGraphicsProgram(vertexShaderSource, fragmentShaderSource);
@@ -166,28 +170,13 @@ int main()
                                 .setShaderProgram(program)
                                 .build();
 
-    // Load model
-    vgfw::resource::Model suzanneModel {};
-    if (!vgfw::io::load("assets/models/Suzanne.gltf", suzanneModel))
-    {
-        return -1;
-    }
-
     // Get textures
     auto* baseColorTexture =
         suzanneModel
             .textureMap[suzanneModel.materialMap[suzanneModel.meshPrimitives[0].materialIndex].baseColorTextureIndex];
     auto* metallicRoughnessTexture =
         suzanneModel
-            .textureMap[suzanneModel.materialMap[suzanneModel.meshPrimitives[0].materialIndex].baseColorTextureIndex];
-
-    // Create index buffer & vertex buffer
-    auto indexBuffer  = rc.createIndexBuffer(vgfw::renderer::IndexType::UInt32,
-                                            suzanneModel.meshPrimitives[0].indices.size(),
-                                            suzanneModel.meshPrimitives[0].indices.data());
-    auto vertexBuffer = rc.createVertexBuffer(vertexFormat->getStride(),
-                                              suzanneModel.meshPrimitives[0].vertices.size(),
-                                              suzanneModel.meshPrimitives[0].vertices.data());
+            .textureMap[suzanneModel.materialMap[suzanneModel.meshPrimitives[0].materialIndex].metallicRoughnessTextureIndex];
 
     // Start time
     auto startTime = std::chrono::high_resolution_clock::now();
@@ -234,10 +223,10 @@ int main()
             .setUniformVec3("objectColor", objectColor)
             .bindTexture(0, *baseColorTexture)
             .bindTexture(1, *metallicRoughnessTexture)
-            .draw(vertexBuffer,
-                  indexBuffer,
-                  suzanneModel.meshPrimitives[0].indices.size(),
-                  suzanneModel.meshPrimitives[0].vertices.size());
+            .draw(*suzanneModel.meshPrimitives[0].vertexBuffer,
+                  *suzanneModel.meshPrimitives[0].indexBuffer,
+                  suzanneModel.meshPrimitives[0].indexCount,
+                  suzanneModel.meshPrimitives[0].vertexCount);
 
         vgfw::renderer::beginImGui();
         ImGui::Begin("GLTF Model");
@@ -253,8 +242,6 @@ int main()
     }
 
     // Cleanup
-    rc.destroy(indexBuffer);
-    rc.destroy(vertexBuffer);
     vgfw::shutdown();
 
     return 0;

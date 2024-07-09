@@ -1053,24 +1053,34 @@ namespace vgfw
 
     namespace resource
     {
-        struct Vertex
+        struct MeshRecord
         {
-            glm::vec3 position;
-            glm::vec3 normal;
-            glm::vec2 texCoords;
+            std::vector<glm::vec3> positions;
+            std::vector<glm::vec3> normals;
+            std::vector<glm::vec2> texcoords;
+            std::vector<glm::vec4> tangents;
         };
 
         struct MeshPrimitive
         {
-            std::string           name;
-            std::vector<Vertex>   vertices;
-            std::vector<uint32_t> indices;
-            int                   materialIndex {-1};
+            std::string name;
 
-            renderer::VertexFormat* vertexFormat {nullptr};
+            uint32_t indexCount {0};
+            uint32_t vertexCount {0};
+
+            MeshRecord record;
+
+            std::vector<uint32_t> indices;
+            std::vector<float>    vertices;
+
+            int materialIndex {-1};
+
+            std::shared_ptr<renderer::VertexFormat> vertexFormat {nullptr};
 
             std::shared_ptr<renderer::IndexBuffer>  indexBuffer {nullptr};
             std::shared_ptr<renderer::VertexBuffer> vertexBuffer {nullptr};
+
+            void build(renderer::VertexFormat::Builder& vertexFormatBuilder);
         };
 
         struct Material
@@ -3057,6 +3067,64 @@ namespace vgfw
         RenderContext&   getRenderContext() { return *g_RenderContext; }
     } // namespace renderer
 
+    namespace resource
+    {
+        void MeshPrimitive::build(renderer::VertexFormat::Builder& vertexFormatBuilder)
+        {
+            vertexFormat = vertexFormatBuilder.build();
+            indexCount   = indices.size();
+
+            bool hasNormal    = !record.normals.empty();
+            bool hasTexCoords = !record.texcoords.empty();
+            bool hasTangent   = !record.tangents.empty();
+
+            for (uint32_t v = 0; v < vertexCount; ++v)
+            {
+                // fill position
+                vertices.push_back(record.positions[v].x);
+                vertices.push_back(record.positions[v].y);
+                vertices.push_back(record.positions[v].z);
+
+                // fill normal
+                if (hasNormal)
+                {
+                    vertices.push_back(record.normals[v].x);
+                    vertices.push_back(record.normals[v].y);
+                    vertices.push_back(record.normals[v].z);
+                }
+
+                // fill uv
+                if (hasTexCoords)
+                {
+                    vertices.push_back(record.texcoords[v].x);
+                    vertices.push_back(record.texcoords[v].y);
+                }
+
+                // fill tangent
+                if (hasTangent)
+                {
+                    vertices.push_back(record.tangents[v].x);
+                    vertices.push_back(record.tangents[v].y);
+                    vertices.push_back(record.tangents[v].z);
+                    vertices.push_back(record.tangents[v].w);
+                }
+            }
+
+            // Load index buffer & vertex buffer
+            auto indexBuf = renderer::getRenderContext().createIndexBuffer(
+                renderer::IndexType::UInt32, indices.size(), indices.data());
+            auto vertexBuf = renderer::getRenderContext().createVertexBuffer(
+                vertexFormat->getStride(), vertexCount, vertices.data());
+
+            indexBuffer = std::shared_ptr<renderer::IndexBuffer>(
+                new renderer::IndexBuffer {std::move(indexBuf)},
+                renderer::RenderContext::ResourceDeleter {renderer::getRenderContext()});
+            vertexBuffer = std::shared_ptr<renderer::VertexBuffer>(
+                new renderer::VertexBuffer {std::move(vertexBuf)},
+                renderer::RenderContext::ResourceDeleter {renderer::getRenderContext()});
+        }
+    } // namespace resource
+
     namespace io
     {
         renderer::Texture* load(const std::filesystem::path& texturePath, renderer::RenderContext& rc, bool flip)
@@ -3180,14 +3248,18 @@ namespace vgfw
             const auto& shapes    = reader.GetShapes();
             const auto& materials = reader.GetMaterials();
 
-            auto vertexFormat = renderer::VertexFormat::Builder {}.buildDefault();
-
             // Loop over shapes
             for (const auto& shape : shapes)
             {
                 auto& meshPrimitive = model.meshPrimitives.emplace_back();
 
                 meshPrimitive.name = shape.name;
+
+                auto    vertexFormatBuilder = renderer::VertexFormat::Builder {};
+                int32_t attributeOffset     = 0;
+
+                bool hasNormal    = false;
+                bool hasTexCoords = false;
 
                 // Loop over faces(polygon)
                 size_t indexOffset = 0;
@@ -3198,52 +3270,63 @@ namespace vgfw
                     // Loop over vertices in the face.
                     for (size_t v = 0; v < fv; v++)
                     {
-                        auto& vertex = meshPrimitive.vertices.emplace_back();
-
                         // access to vertex
                         tinyobj::index_t idx = shape.mesh.indices[indexOffset + v];
                         tinyobj::real_t  vx  = attrib.vertices[3 * static_cast<size_t>(idx.vertex_index) + 0];
                         tinyobj::real_t  vy  = attrib.vertices[3 * static_cast<size_t>(idx.vertex_index) + 1];
                         tinyobj::real_t  vz  = attrib.vertices[3 * static_cast<size_t>(idx.vertex_index) + 2];
 
-                        vertex.position = {vx, vy, vz};
+                        meshPrimitive.record.positions.push_back({vx, vy, vz});
 
                         // Check if `normal_index` is zero or positive. negative = no normal data
                         if (idx.normal_index >= 0)
                         {
+                            hasNormal          = true;
                             tinyobj::real_t nx = attrib.normals[3 * static_cast<size_t>(idx.normal_index) + 0];
                             tinyobj::real_t ny = attrib.normals[3 * static_cast<size_t>(idx.normal_index) + 1];
                             tinyobj::real_t nz = attrib.normals[3 * static_cast<size_t>(idx.normal_index) + 2];
 
-                            vertex.normal = {nx, ny, nz};
+                            meshPrimitive.record.normals.push_back({nx, ny, nz});
                         }
 
                         // Check if `texcoord_index` is zero or positive. negative = no texcoord data
                         if (idx.texcoord_index >= 0)
                         {
+                            hasTexCoords       = true;
                             tinyobj::real_t tx = attrib.texcoords[2 * static_cast<size_t>(idx.texcoord_index) + 0];
                             tinyobj::real_t ty = attrib.texcoords[2 * static_cast<size_t>(idx.texcoord_index) + 1];
 
-                            vertex.texCoords = {tx, ty};
+                            meshPrimitive.record.texcoords.push_back({tx, ty});
                         }
 
                         meshPrimitive.indices.push_back(meshPrimitive.indices.size());
-
-                        // Load index buffer & vertex buffer
-                        auto indexBuf = renderer::getRenderContext().createIndexBuffer(
-                            renderer::IndexType::UInt32, meshPrimitive.indices.size(), meshPrimitive.indices.data());
-                        auto vertexBuf = renderer::getRenderContext().createVertexBuffer(
-                            vertexFormat->getStride(), meshPrimitive.vertices.size(), meshPrimitive.vertices.data());
-
-                        meshPrimitive.indexBuffer = std::shared_ptr<renderer::IndexBuffer>(
-                            new renderer::IndexBuffer {std::move(indexBuf)},
-                            renderer::RenderContext::ResourceDeleter {renderer::getRenderContext()});
-                        meshPrimitive.vertexBuffer = std::shared_ptr<renderer::VertexBuffer>(
-                            new renderer::VertexBuffer {std::move(vertexBuf)},
-                            renderer::RenderContext::ResourceDeleter {renderer::getRenderContext()});
                     }
                     indexOffset += fv;
+                    meshPrimitive.vertexCount += fv;
                 }
+
+                vertexFormatBuilder.setAttribute(
+                    renderer::AttributeLocation::Position,
+                    {.vertType = vgfw::renderer::VertexAttribute::Type::Float3, .offset = attributeOffset});
+                attributeOffset += sizeof(float) * 3;
+
+                if (hasNormal)
+                {
+                    vertexFormatBuilder.setAttribute(
+                        renderer::AttributeLocation::Normal_Color,
+                        {.vertType = vgfw::renderer::VertexAttribute::Type::Float3, .offset = attributeOffset});
+                    attributeOffset += sizeof(float) * 3;
+                }
+
+                if (hasTexCoords)
+                {
+                    vertexFormatBuilder.setAttribute(
+                        renderer::AttributeLocation::TexCoords,
+                        {.vertType = vgfw::renderer::VertexAttribute::Type::Float2, .offset = attributeOffset});
+                    attributeOffset += sizeof(float) * 2;
+                }
+
+                meshPrimitive.build(vertexFormatBuilder);
             }
 
             return true;
@@ -3317,8 +3400,6 @@ namespace vgfw
                 model.materialMap[&material - &gltfModel.materials[0]] = mat;
             }
 
-            auto vertexFormat = renderer::VertexFormat::Builder {}.buildDefault();
-
             // Load meshes
             for (const auto& mesh : gltfModel.meshes)
             {
@@ -3362,6 +3443,9 @@ namespace vgfw
                             break;
                     }
 
+                    auto    vertexFormatBuilder = renderer::VertexFormat::Builder {};
+                    int32_t attributeOffset     = 0;
+
                     const tinygltf::Accessor& positionAccessor =
                         gltfModel.accessors[primitive.attributes.find("POSITION")->second];
                     const tinygltf::BufferView& positionBufferView = gltfModel.bufferViews[positionAccessor.bufferView];
@@ -3371,10 +3455,14 @@ namespace vgfw
                     {
                         const float* positions = reinterpret_cast<const float*>(
                             positionBuffer.data.data() + positionBufferView.byteOffset + positionAccessor.byteOffset);
-                        meshPrimitive.vertices.emplace_back();
-                        meshPrimitive.vertices.back().position = {
-                            positions[3 * i + 0], positions[3 * i + 1], positions[3 * i + 2]};
+                        meshPrimitive.record.positions.push_back(
+                            {positions[3 * i + 0], positions[3 * i + 1], positions[3 * i + 2]});
                     }
+
+                    vertexFormatBuilder.setAttribute(
+                        renderer::AttributeLocation::Position,
+                        {.vertType = vgfw::renderer::VertexAttribute::Type::Float3, .offset = attributeOffset});
+                    attributeOffset += sizeof(float) * 3;
 
                     if (primitive.attributes.find("NORMAL") != primitive.attributes.end())
                     {
@@ -3387,9 +3475,14 @@ namespace vgfw
                         {
                             const float* normals = reinterpret_cast<const float*>(
                                 normalBuffer.data.data() + normalBufferView.byteOffset + normalAccessor.byteOffset);
-                            meshPrimitive.vertices[i].normal = {
-                                normals[3 * i + 0], normals[3 * i + 1], normals[3 * i + 2]};
+                            meshPrimitive.record.normals.push_back(
+                                {normals[3 * i + 0], normals[3 * i + 1], normals[3 * i + 2]});
                         }
+
+                        vertexFormatBuilder.setAttribute(
+                            renderer::AttributeLocation::Normal_Color,
+                            {.vertType = vgfw::renderer::VertexAttribute::Type::Float3, .offset = attributeOffset});
+                        attributeOffset += sizeof(float) * 3;
                     }
 
                     if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end())
@@ -3405,26 +3498,44 @@ namespace vgfw
                             const float* texCoords = reinterpret_cast<const float*>(texCoordBuffer.data.data() +
                                                                                     texCoordBufferView.byteOffset +
                                                                                     texCoordAccessor.byteOffset);
-                            meshPrimitive.vertices[i].texCoords = {texCoords[2 * i + 0], texCoords[2 * i + 1]};
+
+                            meshPrimitive.record.texcoords.push_back({texCoords[2 * i + 0], texCoords[2 * i + 1]});
                         }
+
+                        vertexFormatBuilder.setAttribute(
+                            renderer::AttributeLocation::TexCoords,
+                            {.vertType = vgfw::renderer::VertexAttribute::Type::Float2, .offset = attributeOffset});
+                        attributeOffset += sizeof(float) * 2;
                     }
 
-                    // TODO: Additional attributes such as tangents, joint indices, and weights can be added here
+                    if (primitive.attributes.find("TANGENT") != primitive.attributes.end())
+                    {
+                        const tinygltf::Accessor& tangentAccessor =
+                            gltfModel.accessors[primitive.attributes.find("TANGENT")->second];
+                        const tinygltf::BufferView& tangentBufferView =
+                            gltfModel.bufferViews[tangentAccessor.bufferView];
+                        const tinygltf::Buffer& tangentBuffer = gltfModel.buffers[tangentBufferView.buffer];
+
+                        for (size_t i = 0; i < tangentAccessor.count; ++i)
+                        {
+                            const float* tangents = reinterpret_cast<const float*>(
+                                tangentBuffer.data.data() + tangentBufferView.byteOffset + tangentAccessor.byteOffset);
+                            meshPrimitive.record.tangents.push_back(
+                                {tangents[4 * i + 0], tangents[4 * i + 1], tangents[4 * i + 2], tangents[4 * i + 3]});
+                        }
+
+                        vertexFormatBuilder.setAttribute(
+                            renderer::AttributeLocation::Tangent,
+                            {.vertType = vgfw::renderer::VertexAttribute::Type::Float4, .offset = attributeOffset});
+                        attributeOffset += sizeof(float) * 4;
+                    }
+
+                    // TODO: Additional attributes such as joint indices and weights can be added here
 
                     meshPrimitive.materialIndex = primitive.material;
+                    meshPrimitive.vertexCount   = positionAccessor.count;
 
-                    // Load index buffer & vertex buffer
-                    auto indexBuf = renderer::getRenderContext().createIndexBuffer(
-                        renderer::IndexType::UInt32, meshPrimitive.indices.size(), meshPrimitive.indices.data());
-                    auto vertexBuf = renderer::getRenderContext().createVertexBuffer(
-                        vertexFormat->getStride(), meshPrimitive.vertices.size(), meshPrimitive.vertices.data());
-
-                    meshPrimitive.indexBuffer = std::shared_ptr<renderer::IndexBuffer>(
-                        new renderer::IndexBuffer {std::move(indexBuf)},
-                        renderer::RenderContext::ResourceDeleter {renderer::getRenderContext()});
-                    meshPrimitive.vertexBuffer = std::shared_ptr<renderer::VertexBuffer>(
-                        new renderer::VertexBuffer {std::move(vertexBuf)},
-                        renderer::RenderContext::ResourceDeleter {renderer::getRenderContext()});
+                    meshPrimitive.build(vertexFormatBuilder);
                 }
             }
 
