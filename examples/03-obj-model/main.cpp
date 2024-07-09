@@ -81,15 +81,15 @@ int main()
     // Init renderer
     vgfw::renderer::init({.window = window});
 
+    // Get render context
+    auto& rc = vgfw::renderer::getRenderContext();
+
     // Load model
     vgfw::resource::Model spotModel {};
-    if (!vgfw::io::load("assets/models/spot.obj", spotModel))
+    if (!vgfw::io::load("assets/models/spot/spot.obj", spotModel, rc))
     {
         return -1;
     }
-
-    // Get graphics & render context
-    auto& rc = vgfw::renderer::getRenderContext();
 
     // Get vertex array object
     auto vao = rc.getVertexArray(spotModel.meshPrimitives[0].vertexFormat->getAttributes());
@@ -114,7 +114,7 @@ int main()
                                 .build();
 
     // Load texture
-    auto* spotTexture = vgfw::io::load("assets/models/spot_texture.png", rc);
+    auto* spotTexture = vgfw::io::load("assets/models/spot/spot_texture.png", rc);
 
     // Start time
     auto startTime = std::chrono::high_resolution_clock::now();

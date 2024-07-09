@@ -15,20 +15,20 @@ int main()
     }
 
     // Create a window instance
-    auto window = vgfw::window::create({.title = "05-deferred", .aaSample = vgfw::window::AASample::e8});
+    auto window = vgfw::window::create({.title = "05-pbr", .aaSample = vgfw::window::AASample::e8});
 
     // Init renderer
     vgfw::renderer::init({.window = window});
 
+    // Get graphics & render context
+    auto& rc = vgfw::renderer::getRenderContext();
+
     // Load model
     vgfw::resource::Model sponza {};
-    if (!vgfw::io::load("assets/models/Sponza/glTF/Sponza.gltf", sponza))
+    if (!vgfw::io::load("assets/models/Sponza/glTF/Sponza.gltf", sponza, rc))
     {
         return -1;
     }
-
-    // Get graphics & render context
-    auto& rc = vgfw::renderer::getRenderContext();
 
     // Create shader program
     auto program = rc.createGraphicsProgram(vgfw::utils::readFileAllText("shaders/default.vert"),
@@ -57,8 +57,10 @@ int main()
                           glm::vec4 {0.2f, 0.3f, 0.3f, 1.0f},
                           1.0f);
 
-        for (const auto& meshPrimitive : sponza.meshPrimitives)
+        for (uint32_t primitiveIndex = 0; primitiveIndex < sponza.meshPrimitives.size(); ++primitiveIndex)
         {
+            auto& meshPrimitive = sponza.meshPrimitives[primitiveIndex];
+
             auto vao = rc.getVertexArray(meshPrimitive.vertexFormat->getAttributes());
 
             // Build a graphics pipeline
@@ -81,8 +83,9 @@ int main()
                 .setUniformMat4("view", view)
                 .setUniformMat4("projection", projection)
                 .setUniformVec3("viewPos", cameraPos)
-                .bindTexture(0,
-                             *sponza.textureMap[sponza.materialMap[meshPrimitive.materialIndex].baseColorTextureIndex]);
+                .bindUniformBuffer(0, *meshPrimitive.materialBuffer);
+
+            sponza.bindMeshPrimitiveTextures(primitiveIndex, 1, rc);
 
             meshPrimitive.draw(rc);
         }

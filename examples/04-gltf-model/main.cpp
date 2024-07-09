@@ -35,15 +35,21 @@ layout(location = 2) in vec3 vNormal;
 
 layout(location = 0) out vec4 FragColor;
 
-layout(binding = 0) uniform sampler2D baseColor;
-layout(binding = 1) uniform sampler2D metallicRoughness;
-
 layout(location = 3) uniform vec3 lightPos;
 layout(location = 4) uniform vec3 viewPos;
 layout(location = 5) uniform vec3 lightColor;
 layout(location = 6) uniform vec3 objectColor;
 layout(location = 7) uniform float lightIntensity;
 
+layout(binding = 0) uniform PrimitiveMaterial {
+    int baseColorTextureIndex;
+    int metallicRoughnessTextureIndex;
+    int normalTextureIndex;
+    int occlusionTextureIndex;
+    int emissiveTextureIndex;
+} uMaterial;
+
+layout(binding = 1) uniform sampler2D pbrTextures[5];
 
 // Cook-Torrance GGX (Trowbridge-Reitz) Distribution
 float DistributionGGX(vec3 N, vec3 H, float roughness)
@@ -93,7 +99,7 @@ void main()
     vec2 uv = vec2(vTexCoords.x, 1.0 - vTexCoords.y);
 
     // Retrieve material properties from metallicRoughness texture
-    vec4 texSample = texture(metallicRoughness, uv);
+    vec4 texSample = texture(pbrTextures[uMaterial.metallicRoughnessTextureIndex], uv);
     float metallic = texSample.b;
     float roughness = texSample.g;
 
@@ -120,7 +126,7 @@ void main()
     vec3 result = (ambient + (1.0 - metallic) * diffuse + metallic * specular) * objectColor;
 
     // Output final color with baseColor texture
-    FragColor = texture(baseColor, uv) * vec4(result, 1.0);
+    FragColor = texture(pbrTextures[uMaterial.baseColorTextureIndex], uv) * vec4(result, 1.0);
 }
 )";
 
@@ -139,15 +145,15 @@ int main()
     // Init renderer
     vgfw::renderer::init({.window = window});
 
+    // Get render context
+    auto& rc = vgfw::renderer::getRenderContext();
+
     // Load model
     vgfw::resource::Model suzanneModel {};
-    if (!vgfw::io::load("assets/models/Suzanne.gltf", suzanneModel))
+    if (!vgfw::io::load("assets/models/Suzanne/Suzanne.gltf", suzanneModel, rc))
     {
         return -1;
     }
-
-    // Get graphics & render context
-    auto& rc = vgfw::renderer::getRenderContext();
 
     // Get vertex array object
     auto vao = rc.getVertexArray(suzanneModel.meshPrimitives[0].vertexFormat->getAttributes());
@@ -170,14 +176,6 @@ int main()
                                 .setVAO(vao)
                                 .setShaderProgram(program)
                                 .build();
-
-    // Get textures
-    auto* baseColorTexture =
-        suzanneModel
-            .textureMap[suzanneModel.materialMap[suzanneModel.meshPrimitives[0].materialIndex].baseColorTextureIndex];
-    auto* metallicRoughnessTexture =
-        suzanneModel.textureMap[suzanneModel.materialMap[suzanneModel.meshPrimitives[0].materialIndex]
-                                    .metallicRoughnessTextureIndex];
 
     // Start time
     auto startTime = std::chrono::high_resolution_clock::now();
@@ -224,9 +222,9 @@ int main()
             .setUniformVec3("lightColor", lightColor)
             .setUniformVec3("objectColor", objectColor)
             .setUniform1f("lightIntensity", lightIntensity)
-            .bindTexture(0, *baseColorTexture)
-            .bindTexture(1, *metallicRoughnessTexture);
+            .bindUniformBuffer(0, *suzanneModel.meshPrimitives[0].materialBuffer);
 
+        suzanneModel.bindMeshPrimitiveTextures(0, 1, rc);
         suzanneModel.meshPrimitives[0].draw(rc);
 
         vgfw::renderer::beginImGui();

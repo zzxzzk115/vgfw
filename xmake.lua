@@ -26,6 +26,40 @@ else
     add_cxxflags("-fexceptions")
 end
 
+-- global rules
+rule("copy_assets")
+    before_build(function (target)
+        local asset_files = target:values("asset_files")
+        if asset_files then
+            for _, file in ipairs(asset_files) do
+                local relpath = path.relative(file, os.projectdir())
+                local target_dir = path.join(target:targetdir(), path.directory(relpath))
+                os.mkdir(target_dir)
+                os.cp(file, target_dir)
+                print("Copying asset: " .. file .. " -> " .. target_dir)
+            end
+        end
+    end)
+rule_end()
+
+rule("preprocess_shaders")
+    set_extensions(".vert", ".frag", ".geom", ".glsl")
+    
+    on_build_file(function (target, sourcefile, opt)
+        if path.extension(sourcefile) == ".glsl" then
+            print("Ignoring .glsl as a shader library file: " .. sourcefile)
+            return
+        end
+
+        local shader_root = target:values("shader_root")
+        local target_shaders_dir = path.join(target:targetdir(), "shaders")
+        local output_path = path.join(target_shaders_dir, path.filename(sourcefile))
+        os.mkdir(target_shaders_dir)
+        os.execv("glslc", {"-I", shader_root, "-E", sourcefile, "-o", output_path})
+        print("Preprocessing shader: " .. sourcefile .. " -> " .. output_path)
+    end)
+rule_end()
+
 add_rules("mode.debug", "mode.release")
 add_rules("plugin.vsxmake.autoupdate")
 add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode"})

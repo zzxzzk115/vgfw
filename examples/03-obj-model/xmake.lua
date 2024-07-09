@@ -3,6 +3,12 @@ target("03-obj-model")
     -- set target kind: executable
     set_kind("binary")
 
+    -- set values
+    set_values("asset_files", "assets/models/spot/**")
+
+    -- add rules
+    add_rules("copy_assets")
+
     -- add source files
     add_files("main.cpp")
 
@@ -11,8 +17,3 @@ target("03-obj-model")
 
     -- set target directory
     set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/examples/03-obj-model")
-
-    -- copy assets
-    on_load(function(target)
-        os.cp("$(scriptdir)/assets", target:targetdir())
-    end)

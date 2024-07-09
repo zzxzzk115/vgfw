@@ -104,6 +104,12 @@
 
 namespace vgfw
 {
+    // fwd
+    namespace renderer
+    {
+        class GraphicsContext;
+    }
+
     namespace utils
     {
         template<typename T, typename... Rest>
@@ -124,12 +130,6 @@ namespace vgfw
         void init();
         void shutdown();
     } // namespace log
-
-    // fwd
-    namespace renderer
-    {
-        class GraphicsContext;
-    }
 
     namespace window
     {
@@ -285,7 +285,7 @@ namespace vgfw
             void        swapBuffers();
             static void setVSync(bool vsyncEnabled);
 
-            bool isSupportDsa() const { return m_SupportDSA; }
+            bool isSupportDSA() const { return m_SupportDSA; }
 
             inline std::shared_ptr<window::Window> getWindow() const { return m_Window; }
 
@@ -869,6 +869,7 @@ namespace vgfw
             RenderContext& bindImage(GLuint unit, const Texture&, GLint mipLevel, GLenum access);
             RenderContext& bindTexture(GLuint unit, const Texture&, std::optional<GLuint> samplerId = {});
             RenderContext& bindUniformBuffer(GLuint index, const UniformBuffer&);
+            RenderContext& bindStorageBuffer(GLuint index, const StorageBuffer&);
 
             RenderContext& drawFullScreenTriangle();
             RenderContext& drawCube();
@@ -1063,6 +1064,18 @@ namespace vgfw
 
     namespace resource
     {
+        struct Material
+        {
+            int baseColorTextureIndex {-1};
+            int metallicRoughnessTextureIndex {-1};
+
+            int normalTextureIndex {-1};
+            int occlusionTextureIndex {-1};
+            int emissiveTextureIndex {-1};
+        };
+
+        using PrimitiveMaterial = Material;
+
         struct MeshRecord
         {
             std::vector<glm::vec3> positions;
@@ -1078,7 +1091,7 @@ namespace vgfw
             uint32_t indexCount {0};
             uint32_t vertexCount {0};
 
-            MeshRecord record;
+            MeshRecord record {};
 
             std::vector<uint32_t> indices;
             std::vector<float>    vertices;
@@ -1090,25 +1103,22 @@ namespace vgfw
             std::shared_ptr<renderer::IndexBuffer>  indexBuffer {nullptr};
             std::shared_ptr<renderer::VertexBuffer> vertexBuffer {nullptr};
 
-            void build(renderer::VertexFormat::Builder& vertexFormatBuilder);
+            PrimitiveMaterial                 material {};
+            std::shared_ptr<renderer::Buffer> materialBuffer {nullptr};
+            std::vector<uint32_t>             textureIndices;
+
+            void build(renderer::VertexFormat::Builder& vertexFormatBuilder, renderer::RenderContext& rc);
             void draw(renderer::RenderContext& rc) const;
-        };
-
-        struct Material
-        {
-            int baseColorTextureIndex {-1};
-            int metallicRoughnessTextureIndex {-1};
-
-            int normalTextureIndex {-1};
-            int occlusionTextureIndex {-1};
-            int emissiveTextureIndex {-1};
         };
 
         struct Model
         {
-            std::vector<MeshPrimitive>                        meshPrimitives;
-            std::unordered_map<int, vgfw::renderer::Texture*> textureMap;
-            std::unordered_map<int, Material>                 materialMap;
+            std::vector<MeshPrimitive> meshPrimitives;
+
+            std::vector<vgfw::renderer::Texture*> textures;
+            std::vector<Material>                 materials;
+
+            void bindMeshPrimitiveTextures(uint32_t primitiveIndex, uint32_t unit, renderer::RenderContext& rc) const;
         };
     } // namespace resource
 
@@ -1121,7 +1131,7 @@ namespace vgfw
 
         void release(const std::filesystem::path& texturePath, renderer::Texture& texture, renderer::RenderContext& rc);
 
-        bool load(const std::filesystem::path& modelPath, resource::Model& model);
+        bool load(const std::filesystem::path& modelPath, resource::Model& model, renderer::RenderContext& rc);
     } // namespace io
 
     bool init();
@@ -1209,7 +1219,7 @@ namespace vgfw
             std::vector<spdlog::sink_ptr> logSinks;
 
             logSinks.emplace_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
-            logSinks.emplace_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("SnowLeopardEngine.log", true));
+            logSinks.emplace_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("VGFW.log", true));
 
             logSinks[0]->set_pattern("%^[%T] %n: %v%$");
             logSinks[1]->set_pattern("[%T] [%l] %n: %v");
@@ -2352,6 +2362,13 @@ namespace vgfw
             return *this;
         }
 
+        RenderContext& RenderContext::bindStorageBuffer(GLuint index, const StorageBuffer& buffer)
+        {
+            assert(buffer);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, index, buffer.m_Id);
+            return *this;
+        }
+
         RenderContext& RenderContext::drawFullScreenTriangle() { return draw({}, {}, 0, 3); }
 
         RenderContext& RenderContext::drawCube() { return draw({}, {}, 0, 36); }
@@ -2549,6 +2566,9 @@ namespace vgfw
                 assert(infoLogLength > 0);
                 std::string infoLog("", infoLogLength);
                 glGetProgramInfoLog(program, infoLogLength, nullptr, infoLog.data());
+
+                VGFW_ERROR("[ShaderInfoLog] {0}", infoLog);
+
                 throw std::runtime_error {infoLog};
             }
             for (auto shader : shaders)
@@ -3095,7 +3115,7 @@ namespace vgfw
 
     namespace resource
     {
-        void MeshPrimitive::build(renderer::VertexFormat::Builder& vertexFormatBuilder)
+        void MeshPrimitive::build(renderer::VertexFormat::Builder& vertexFormatBuilder, renderer::RenderContext& rc)
         {
             vertexFormat = vertexFormatBuilder.build();
             indexCount   = indices.size();
@@ -3137,23 +3157,36 @@ namespace vgfw
             }
 
             // Load index buffer & vertex buffer
-            auto indexBuf = renderer::getRenderContext().createIndexBuffer(
-                renderer::IndexType::eUInt32, indices.size(), indices.data());
-            auto vertexBuf = renderer::getRenderContext().createVertexBuffer(
-                vertexFormat->getStride(), vertexCount, vertices.data());
+            auto indexBuf  = rc.createIndexBuffer(renderer::IndexType::eUInt32, indices.size(), indices.data());
+            auto vertexBuf = rc.createVertexBuffer(vertexFormat->getStride(), vertexCount, vertices.data());
 
-            indexBuffer = std::shared_ptr<renderer::IndexBuffer>(
-                new renderer::IndexBuffer {std::move(indexBuf)},
-                renderer::RenderContext::ResourceDeleter {renderer::getRenderContext()});
-            vertexBuffer = std::shared_ptr<renderer::VertexBuffer>(
-                new renderer::VertexBuffer {std::move(vertexBuf)},
-                renderer::RenderContext::ResourceDeleter {renderer::getRenderContext()});
+            indexBuffer  = std::shared_ptr<renderer::IndexBuffer>(new renderer::IndexBuffer {std::move(indexBuf)},
+                                                                 renderer::RenderContext::ResourceDeleter {rc});
+            vertexBuffer = std::shared_ptr<renderer::VertexBuffer>(new renderer::VertexBuffer {std::move(vertexBuf)},
+                                                                   renderer::RenderContext::ResourceDeleter {rc});
+
+            // Load material buffer
+            auto materialBuf = rc.createBuffer(sizeof(PrimitiveMaterial), &material);
+            materialBuffer   = std::shared_ptr<renderer::Buffer>(new renderer::Buffer {std::move(materialBuf)},
+                                                               renderer::RenderContext::ResourceDeleter {rc});
         }
 
         void MeshPrimitive::draw(renderer::RenderContext& rc) const
         {
             assert(vertexBuffer && indexBuffer);
             rc.draw(*vertexBuffer, *indexBuffer, indexCount, vertexCount);
+        }
+
+        void Model::bindMeshPrimitiveTextures(uint32_t primitiveIndex, uint32_t unit, renderer::RenderContext& rc) const
+        {
+            assert(primitiveIndex >= 0 && primitiveIndex < meshPrimitives.size());
+
+            const auto& primitive = meshPrimitives[primitiveIndex];
+
+            for (uint32_t i = 0; i < primitive.textureIndices.size(); ++i)
+            {
+                rc.bindTexture(unit + i, *textures[primitive.textureIndices[i]]);
+            }
         }
     } // namespace resource
 
@@ -3254,7 +3287,7 @@ namespace vgfw
             }
         }
 
-        bool loadOBJ(const std::filesystem::path& modelPath, resource::Model& model)
+        bool loadOBJ(const std::filesystem::path& modelPath, resource::Model& model, renderer::RenderContext& rc)
         {
             std::string              inputfile = modelPath.generic_string();
             tinyobj::ObjReaderConfig readerConfig;
@@ -3358,13 +3391,13 @@ namespace vgfw
                     attributeOffset += sizeof(float) * 2;
                 }
 
-                meshPrimitive.build(vertexFormatBuilder);
+                meshPrimitive.build(vertexFormatBuilder, rc);
             }
 
             return true;
         }
 
-        bool loadGLTF(const std::filesystem::path& modelPath, resource::Model& model)
+        bool loadGLTF(const std::filesystem::path& modelPath, resource::Model& model, renderer::RenderContext& rc)
         {
             tinygltf::TinyGLTF loader;
             tinygltf::Model    gltfModel;
@@ -3406,15 +3439,16 @@ namespace vgfw
             }
 
             // Load textures
+            model.textures.resize(gltfModel.textures.size());
             for (const auto& texture : gltfModel.textures)
             {
-                const auto&              image = gltfModel.images[texture.source];
-                vgfw::renderer::Texture* loadedTexture =
-                    vgfw::io::load(modelPath.parent_path() / image.uri, renderer::getRenderContext());
-                model.textureMap[texture.source] = loadedTexture;
+                const auto&              image         = gltfModel.images[texture.source];
+                vgfw::renderer::Texture* loadedTexture = vgfw::io::load(modelPath.parent_path() / image.uri, rc);
+                model.textures[texture.source]         = loadedTexture;
             }
 
             // Load materials
+            model.materials.resize(gltfModel.materials.size());
             for (const auto& material : gltfModel.materials)
             {
                 resource::Material mat {};
@@ -3434,7 +3468,7 @@ namespace vgfw
                 mat.occlusionTextureIndex = material.occlusionTexture.index;
                 mat.emissiveTextureIndex  = material.emissiveTexture.index;
 
-                model.materialMap[&material - &gltfModel.materials[0]] = mat;
+                model.materials[&material - &gltfModel.materials[0]] = mat;
             }
 
             // Load meshes
@@ -3572,23 +3606,57 @@ namespace vgfw
                     meshPrimitive.materialIndex = primitive.material;
                     meshPrimitive.vertexCount   = positionAccessor.count;
 
-                    meshPrimitive.build(vertexFormatBuilder);
+                    const auto& material = model.materials[meshPrimitive.materialIndex];
+
+                    uint32_t textureIndex = 0;
+
+                    if (material.baseColorTextureIndex != -1)
+                    {
+                        meshPrimitive.material.baseColorTextureIndex = textureIndex++;
+                        meshPrimitive.textureIndices.push_back(material.baseColorTextureIndex);
+                    }
+
+                    if (material.metallicRoughnessTextureIndex != -1)
+                    {
+                        meshPrimitive.material.metallicRoughnessTextureIndex = textureIndex++;
+                        meshPrimitive.textureIndices.push_back(material.metallicRoughnessTextureIndex);
+                    }
+
+                    if (material.normalTextureIndex != -1)
+                    {
+                        meshPrimitive.material.normalTextureIndex = textureIndex++;
+                        meshPrimitive.textureIndices.push_back(material.normalTextureIndex);
+                    }
+
+                    if (material.occlusionTextureIndex != -1)
+                    {
+                        meshPrimitive.material.occlusionTextureIndex = textureIndex++;
+                        meshPrimitive.textureIndices.push_back(material.occlusionTextureIndex);
+                    }
+
+                    if (material.emissiveTextureIndex != -1)
+                    {
+                        meshPrimitive.material.emissiveTextureIndex = textureIndex++;
+                        meshPrimitive.textureIndices.push_back(material.emissiveTextureIndex);
+                    }
+
+                    meshPrimitive.build(vertexFormatBuilder, rc);
                 }
             }
 
             return true;
         }
 
-        bool load(const std::filesystem::path& modelPath, resource::Model& model)
+        bool load(const std::filesystem::path& modelPath, resource::Model& model, renderer::RenderContext& rc)
         {
             const auto& ext = modelPath.extension();
             if (ext == ".obj")
             {
-                return loadOBJ(modelPath, model);
+                return loadOBJ(modelPath, model, rc);
             }
             else if (ext == ".gltf" || ext == ".glb")
             {
-                return loadGLTF(modelPath, model);
+                return loadGLTF(modelPath, model, rc);
             }
 
             return false;
