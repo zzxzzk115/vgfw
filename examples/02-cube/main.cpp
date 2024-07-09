@@ -46,7 +46,7 @@ int main()
     }
 
     // Create a window instance
-    auto window = vgfw::window::create({.title = "02-cube", .enableMSAA = true, .aaSample = 8});
+    auto window = vgfw::window::create({.title = "02-cube", .aaSample = vgfw::window::AASample::e8});
 
     // Init renderer
     vgfw::renderer::init({.window = window});
@@ -56,10 +56,10 @@ int main()
 
     // Build vertex format
     auto vertexFormat = vgfw::renderer::VertexFormat::Builder {}
-                            .setAttribute(vgfw::renderer::AttributeLocation::Position,
-                                          {.vertType = vgfw::renderer::VertexAttribute::Type::Float3, .offset = 0})
-                            .setAttribute(vgfw::renderer::AttributeLocation::TexCoords,
-                                          {.vertType = vgfw::renderer::VertexAttribute::Type::Float2, .offset = 12})
+                            .setAttribute(vgfw::renderer::AttributeLocation::ePosition,
+                                          {.vertType = vgfw::renderer::VertexAttribute::Type::eFloat3, .offset = 0})
+                            .setAttribute(vgfw::renderer::AttributeLocation::eTexCoords,
+                                          {.vertType = vgfw::renderer::VertexAttribute::Type::eFloat2, .offset = 12})
                             .build();
 
     // Get vertex array object
@@ -73,11 +73,11 @@ int main()
                                 .setDepthStencil({
                                     .depthTest      = true,
                                     .depthWrite     = true,
-                                    .depthCompareOp = vgfw::renderer::CompareOp::Less,
+                                    .depthCompareOp = vgfw::renderer::CompareOp::eLess,
                                 })
                                 .setRasterizerState({
-                                    .polygonMode = vgfw::renderer::PolygonMode::Fill,
-                                    .cullMode    = vgfw::renderer::CullMode::Back,
+                                    .polygonMode = vgfw::renderer::PolygonMode::eFill,
+                                    .cullMode    = vgfw::renderer::CullMode::eBack,
                                     .scissorTest = false,
                                 })
                                 .setVAO(vao)

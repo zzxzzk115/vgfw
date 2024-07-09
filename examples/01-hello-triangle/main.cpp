@@ -38,7 +38,7 @@ int main()
     }
 
     // Create a window instance
-    auto window = vgfw::window::create({.title = "01-hello-triangle", .enableMSAA = true, .aaSample = 8});
+    auto window = vgfw::window::create({.title = "01-hello-triangle", .aaSample = vgfw::window::AASample::e8});
 
     // Init renderer
     vgfw::renderer::init({.window = window});
@@ -48,10 +48,10 @@ int main()
 
     // Build vertex format
     auto vertexFormat = vgfw::renderer::VertexFormat::Builder {}
-                            .setAttribute(vgfw::renderer::AttributeLocation::Position,
-                                          {.vertType = vgfw::renderer::VertexAttribute::Type::Float3, .offset = 0})
-                            .setAttribute(vgfw::renderer::AttributeLocation::Normal_Color,
-                                          {.vertType = vgfw::renderer::VertexAttribute::Type::Float3, .offset = 12})
+                            .setAttribute(vgfw::renderer::AttributeLocation::ePosition,
+                                          {.vertType = vgfw::renderer::VertexAttribute::Type::eFloat3, .offset = 0})
+                            .setAttribute(vgfw::renderer::AttributeLocation::eNormal_Color,
+                                          {.vertType = vgfw::renderer::VertexAttribute::Type::eFloat3, .offset = 12})
                             .build();
 
     // Get vertex array object
@@ -65,11 +65,11 @@ int main()
                                 .setDepthStencil({
                                     .depthTest      = false,
                                     .depthWrite     = true,
-                                    .depthCompareOp = vgfw::renderer::CompareOp::Less,
+                                    .depthCompareOp = vgfw::renderer::CompareOp::eLess,
                                 })
                                 .setRasterizerState({
-                                    .polygonMode = vgfw::renderer::PolygonMode::Fill,
-                                    .cullMode    = vgfw::renderer::CullMode::Back,
+                                    .polygonMode = vgfw::renderer::PolygonMode::eFill,
+                                    .cullMode    = vgfw::renderer::CullMode::eBack,
                                     .scissorTest = false,
                                 })
                                 .setVAO(vao)
@@ -92,7 +92,7 @@ int main()
     // clang-format on
 
     // Create index buffer & vertex buffer
-    auto indexBuffer  = rc.createIndexBuffer(vgfw::renderer::IndexType::UInt32, 3, indices);
+    auto indexBuffer  = rc.createIndexBuffer(vgfw::renderer::IndexType::eUInt32, 3, indices);
     auto vertexBuffer = rc.createVertexBuffer(vertexFormat->getStride(), 3, vertices);
 
     // Main loop

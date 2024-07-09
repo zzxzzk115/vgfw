@@ -133,19 +133,29 @@ namespace vgfw
 
     namespace window
     {
+        enum class AASample
+        {
+            e1  = 1,
+            e2  = 2,
+            e4  = 4,
+            e8  = 8,
+            e16 = 16
+        };
+
         struct WindowInitInfo
         {
-            uint32_t    width      = 1024;
-            uint32_t    height     = 768;
-            std::string title      = "VGFW Window";
-            bool        vSync      = true;
-            bool        enableMSAA = false;
-            uint32_t    aaSample   = 0;
+            std::string title        = "VGFW Window";
+            uint32_t    width        = 1024;
+            uint32_t    height       = 768;
+            bool        isResizable  = false;
+            bool        isFullScreen = false;
+            bool        enableVSync  = false;
+            AASample    aaSample     = AASample::e1;
         };
 
         enum class WindowType
         {
-            GLFW = 0,
+            eGLFW = 0,
         };
 
         class Window
@@ -211,7 +221,7 @@ namespace vgfw
         class GLFWWindow final : public Window
         {
         public:
-            virtual WindowType getType() override { return WindowType::GLFW; }
+            virtual WindowType getType() override { return WindowType::eGLFW; }
 
             virtual bool init(const WindowInitInfo& initInfo) override;
 
@@ -252,14 +262,14 @@ namespace vgfw
             {
                 std::string  title;
                 unsigned int width {0}, height {0};
-                GLFWWindow*  windowSys {nullptr};
+                GLFWWindow*  platformWindow {nullptr};
                 bool         isMinimized {false};
             };
 
             WindowData m_Data;
         };
 
-        std::shared_ptr<Window> create(const WindowInitInfo& windowInitInfo, WindowType type = WindowType::GLFW);
+        std::shared_ptr<Window> create(const WindowInitInfo& windowInitInfo, WindowType type = WindowType::eGLFW);
     } // namespace window
 
     namespace renderer
@@ -320,10 +330,10 @@ namespace vgfw
 
         enum class IndexType
         {
-            Unknown = 0,
-            UInt8   = 1,
-            UInt16  = 2,
-            UInt32  = 4
+            eUnknown = 0,
+            eUInt8   = 1,
+            eUInt16  = 2,
+            eUInt32  = 4
         };
 
         class IndexBuffer final : public Buffer
@@ -340,7 +350,7 @@ namespace vgfw
             IndexBuffer(Buffer, IndexType);
 
         private:
-            IndexType m_IndexType {IndexType::Unknown};
+            IndexType m_IndexType {IndexType::eUnknown};
         };
 
         class VertexBuffer final : public Buffer
@@ -364,15 +374,15 @@ namespace vgfw
         {
             enum class Type
             {
-                Float = 0,
-                Float2,
-                Float3,
-                Float4,
+                eFloat = 0,
+                eFloat2,
+                eFloat3,
+                eFloat4,
 
-                Int,
-                Int4,
+                eInt,
+                eInt4,
 
-                UByte4_Norm,
+                eUByte4_Norm,
             };
             Type    vertType;
             int32_t offset;
@@ -382,11 +392,11 @@ namespace vgfw
 
         enum class AttributeLocation : int32_t
         {
-            Position = 0,
-            Normal_Color,
-            TexCoords,
-            Tangent,
-            Bitangent,
+            ePosition = 0,
+            eNormal_Color,
+            eTexCoords,
+            eTangent,
+            eBitangent,
         };
 
         class VertexFormat
@@ -470,51 +480,51 @@ namespace vgfw
 
         enum class CompareOp : GLenum
         {
-            Never          = GL_NEVER,
-            Less           = GL_LESS,
-            Equal          = GL_EQUAL,
-            LessOrEqual    = GL_LEQUAL,
-            Greater        = GL_GREATER,
-            NotEqual       = GL_NOTEQUAL,
-            GreaterOrEqual = GL_GEQUAL,
-            Always         = GL_ALWAYS
+            eNever          = GL_NEVER,
+            eLess           = GL_LESS,
+            eEqual          = GL_EQUAL,
+            eLessOrEqual    = GL_LEQUAL,
+            eGreater        = GL_GREATER,
+            eNotEqual       = GL_NOTEQUAL,
+            eGreaterOrEqual = GL_GEQUAL,
+            eAlways         = GL_ALWAYS
         };
 
         using ViewportDesc = Rect2D;
 
         enum class PixelFormat : GLenum
         {
-            Unknown = GL_NONE,
+            eUnknown = GL_NONE,
 
-            R8_UNorm = GL_R8,
-            R32I     = GL_R32I,
+            eR8_UNorm = GL_R8,
+            eR32I     = GL_R32I,
 
-            RGB8_UNorm  = GL_RGB8,
-            RGBA8_UNorm = GL_RGBA8,
+            eRGB8_UNorm  = GL_RGB8,
+            eRGBA8_UNorm = GL_RGBA8,
 
-            RGB8_SNorm  = GL_RGB8_SNORM,
-            RGBA8_SNorm = GL_RGBA8_SNORM,
+            eRGB8_SNorm  = GL_RGB8_SNORM,
+            eRGBA8_SNorm = GL_RGBA8_SNORM,
 
-            R16F    = GL_R16F,
-            RG16F   = GL_RG16F,
-            RGB16F  = GL_RGB16F,
-            RGBA16F = GL_RGBA16F,
+            eR16F    = GL_R16F,
+            eRG16F   = GL_RG16F,
+            eRGB16F  = GL_RGB16F,
+            eRGBA16F = GL_RGBA16F,
 
-            RGB32F = GL_RGB32F,
+            eRGB32F = GL_RGB32F,
 
-            RGBA32F = GL_RGBA32F,
+            eRGBA32F = GL_RGBA32F,
 
-            RGBA32UI = GL_RGBA32UI,
+            eRGBA32UI = GL_RGBA32UI,
 
-            Depth16  = GL_DEPTH_COMPONENT16,
-            Depth24  = GL_DEPTH_COMPONENT24,
-            Depth32F = GL_DEPTH_COMPONENT32F
+            eDepth16  = GL_DEPTH_COMPONENT16,
+            eDepth24  = GL_DEPTH_COMPONENT24,
+            eDepth32F = GL_DEPTH_COMPONENT32F
         };
 
         enum class TextureType : GLenum
         {
-            Texture2D = GL_TEXTURE_2D,
-            CubeMap   = GL_TEXTURE_CUBE_MAP
+            eTexture2D = GL_TEXTURE_2D,
+            eCubeMap   = GL_TEXTURE_CUBE_MAP
         };
 
         class Texture
@@ -562,39 +572,39 @@ namespace vgfw
             uint32_t m_NumMipLevels {1u};
             uint32_t m_NumLayers {0u};
 
-            PixelFormat m_PixelFormat {PixelFormat::Unknown};
+            PixelFormat m_PixelFormat {PixelFormat::eUnknown};
         };
 
         enum class TexelFilter : GLenum
         {
-            Nearest = GL_NEAREST,
-            Linear  = GL_LINEAR
+            eNearest = GL_NEAREST,
+            eLinear  = GL_LINEAR
         };
         enum class MipmapMode : GLenum
         {
-            None    = GL_NONE,
-            Nearest = GL_NEAREST,
-            Linear  = GL_LINEAR
+            eNone    = GL_NONE,
+            eNearest = GL_NEAREST,
+            eLinear  = GL_LINEAR
         };
 
         enum class SamplerAddressMode : GLenum
         {
-            Repeat            = GL_REPEAT,
-            MirroredRepeat    = GL_MIRRORED_REPEAT,
-            ClampToEdge       = GL_CLAMP_TO_EDGE,
-            ClampToBorder     = GL_CLAMP_TO_BORDER,
-            MirrorClampToEdge = GL_MIRROR_CLAMP_TO_EDGE
+            eRepeat            = GL_REPEAT,
+            eMirroredRepeat    = GL_MIRRORED_REPEAT,
+            eClampToEdge       = GL_CLAMP_TO_EDGE,
+            eClampToBorder     = GL_CLAMP_TO_BORDER,
+            eMirrorClampToEdge = GL_MIRROR_CLAMP_TO_EDGE
         };
 
         struct SamplerInfo
         {
-            TexelFilter minFilter {TexelFilter::Nearest};
-            MipmapMode  mipmapMode {MipmapMode::Linear};
-            TexelFilter magFilter {TexelFilter::Linear};
+            TexelFilter minFilter {TexelFilter::eNearest};
+            MipmapMode  mipmapMode {MipmapMode::eLinear};
+            TexelFilter magFilter {TexelFilter::eLinear};
 
-            SamplerAddressMode addressModeS {SamplerAddressMode::Repeat};
-            SamplerAddressMode addressModeT {SamplerAddressMode::Repeat};
-            SamplerAddressMode addressModeR {SamplerAddressMode::Repeat};
+            SamplerAddressMode addressModeS {SamplerAddressMode::eRepeat};
+            SamplerAddressMode addressModeT {SamplerAddressMode::eRepeat};
+            SamplerAddressMode addressModeR {SamplerAddressMode::eRepeat};
 
             float maxAnisotropy {1.0f};
 
@@ -610,7 +620,7 @@ namespace vgfw
         {
             bool      depthTest {false};
             bool      depthWrite {true};
-            CompareOp depthCompareOp {CompareOp::Less};
+            CompareOp depthCompareOp {CompareOp::eLess};
 
             // clang-format off
             auto operator<=> (const DepthStencilState&) const = default;
@@ -619,33 +629,33 @@ namespace vgfw
 
         enum class BlendOp : GLenum
         {
-            Add             = GL_FUNC_ADD,
-            Subtract        = GL_FUNC_SUBTRACT,
-            ReverseSubtract = GL_FUNC_REVERSE_SUBTRACT,
-            Min             = GL_MIN,
-            Max             = GL_MAX
+            eAdd             = GL_FUNC_ADD,
+            eSubtract        = GL_FUNC_SUBTRACT,
+            eReverseSubtract = GL_FUNC_REVERSE_SUBTRACT,
+            eMin             = GL_MIN,
+            eMax             = GL_MAX
         };
         enum class BlendFactor : GLenum
         {
-            Zero                  = GL_ZERO,
-            One                   = GL_ONE,
-            SrcColor              = GL_SRC_COLOR,
-            OneMinusSrcColor      = GL_ONE_MINUS_SRC_COLOR,
-            DstColor              = GL_DST_COLOR,
-            OneMinusDstColor      = GL_ONE_MINUS_DST_COLOR,
-            SrcAlpha              = GL_SRC_ALPHA,
-            OneMinusSrcAlpha      = GL_ONE_MINUS_SRC_ALPHA,
-            DstAlpha              = GL_DST_ALPHA,
-            OneMinusDstAlpha      = GL_ONE_MINUS_DST_ALPHA,
-            ConstantColor         = GL_CONSTANT_COLOR,
-            OneMinusConstantColor = GL_ONE_MINUS_CONSTANT_COLOR,
-            ConstantAlpha         = GL_CONSTANT_ALPHA,
-            OneMinusConstantAlpha = GL_ONE_MINUS_CONSTANT_ALPHA,
-            SrcAlphaSaturate      = GL_SRC_ALPHA_SATURATE,
-            Src1Color             = GL_SRC1_COLOR,
-            OneMinusSrc1Color     = GL_ONE_MINUS_SRC1_COLOR,
-            Src1Alpha             = GL_SRC1_ALPHA,
-            OneMinusSrc1Alpha     = GL_ONE_MINUS_SRC1_ALPHA
+            eZero                  = GL_ZERO,
+            eOne                   = GL_ONE,
+            eSrcColor              = GL_SRC_COLOR,
+            eOneMinusSrcColor      = GL_ONE_MINUS_SRC_COLOR,
+            eDstColor              = GL_DST_COLOR,
+            eOneMinusDstColor      = GL_ONE_MINUS_DST_COLOR,
+            eSrcAlpha              = GL_SRC_ALPHA,
+            eOneMinusSrcAlpha      = GL_ONE_MINUS_SRC_ALPHA,
+            eDstAlpha              = GL_DST_ALPHA,
+            eOneMinusDstAlpha      = GL_ONE_MINUS_DST_ALPHA,
+            eConstantColor         = GL_CONSTANT_COLOR,
+            eOneMinusConstantColor = GL_ONE_MINUS_CONSTANT_COLOR,
+            eConstantAlpha         = GL_CONSTANT_ALPHA,
+            eOneMinusConstantAlpha = GL_ONE_MINUS_CONSTANT_ALPHA,
+            eSrcAlphaSaturate      = GL_SRC_ALPHA_SATURATE,
+            eSrc1Color             = GL_SRC1_COLOR,
+            eOneMinusSrc1Color     = GL_ONE_MINUS_SRC1_COLOR,
+            eSrc1Alpha             = GL_SRC1_ALPHA,
+            eOneMinusSrc1Alpha     = GL_ONE_MINUS_SRC1_ALPHA
         };
 
         // src = incoming values
@@ -654,13 +664,13 @@ namespace vgfw
         {
             bool enabled {false};
 
-            BlendFactor srcColor {BlendFactor::One};
-            BlendFactor destColor {BlendFactor::Zero};
-            BlendOp     colorOp {BlendOp::Add};
+            BlendFactor srcColor {BlendFactor::eOne};
+            BlendFactor destColor {BlendFactor::eZero};
+            BlendOp     colorOp {BlendOp::eAdd};
 
-            BlendFactor srcAlpha {BlendFactor::One};
-            BlendFactor destAlpha {BlendFactor::Zero};
-            BlendOp     alphaOp {BlendOp::Add};
+            BlendFactor srcAlpha {BlendFactor::eOne};
+            BlendFactor destAlpha {BlendFactor::eZero};
+            BlendOp     alphaOp {BlendOp::eAdd};
 
             // clang-format off
             auto operator<=> (const BlendState&) const = default;
@@ -670,15 +680,15 @@ namespace vgfw
 
         enum class PolygonMode : GLenum
         {
-            Point = GL_POINT,
-            Line  = GL_LINE,
-            Fill  = GL_FILL
+            ePoint = GL_POINT,
+            eLine  = GL_LINE,
+            eFill  = GL_FILL
         };
         enum class CullMode : GLenum
         {
-            None  = GL_NONE,
-            Back  = GL_BACK,
-            Front = GL_FRONT
+            eNone  = GL_NONE,
+            eBack  = GL_BACK,
+            eFront = GL_FRONT
         };
         struct PolygonOffset
         {
@@ -691,8 +701,8 @@ namespace vgfw
 
         struct RasterizerState
         {
-            PolygonMode                  polygonMode {PolygonMode::Fill};
-            CullMode                     cullMode {CullMode::Back};
+            PolygonMode                  polygonMode {PolygonMode::eFill};
+            CullMode                     cullMode {CullMode::eBack};
             std::optional<PolygonOffset> polygonOffset;
             bool                         depthClampEnable {false};
             bool                         scissorTest {false};
@@ -773,16 +783,16 @@ namespace vgfw
 
         enum class PrimitiveTopology : GLenum
         {
-            Undefined = GL_NONE,
+            eUndefined = GL_NONE,
 
-            PointList = GL_POINTS,
-            LineList  = GL_LINES,
-            LineStrip = GL_LINE_STRIP,
+            ePointList = GL_POINTS,
+            eLineList  = GL_LINES,
+            eLineStrip = GL_LINE_STRIP,
 
-            TriangleList  = GL_TRIANGLES,
-            TriangleStrip = GL_TRIANGLE_STRIP,
+            eTriangleList  = GL_TRIANGLES,
+            eTriangleStrip = GL_TRIANGLE_STRIP,
 
-            PatchList = GL_PATCHES
+            ePatchList = GL_PATCHES
         };
 
         class RenderContext
@@ -945,9 +955,9 @@ namespace vgfw
 
             enum class WrapMode
             {
-                ClampToEdge = 0,
-                ClampToOpaqueBlack,
-                ClampToOpaqueWhite
+                eClampToEdge = 0,
+                eClampToOpaqueBlack,
+                eClampToOpaqueWhite
             };
 
             class FrameGraphTexture
@@ -959,11 +969,11 @@ namespace vgfw
                     uint32_t    depth {0};
                     uint32_t    numMipLevels {1};
                     uint32_t    layers {0};
-                    PixelFormat format {PixelFormat::Unknown};
+                    PixelFormat format {PixelFormat::eUnknown};
 
                     bool        shadowSampler {false};
-                    WrapMode    wrap {WrapMode::ClampToEdge};
-                    TexelFilter filter {TexelFilter::Linear};
+                    WrapMode    wrap {WrapMode::eClampToEdge};
+                    TexelFilter filter {TexelFilter::eLinear};
                 };
 
                 // NOLINTBEGIN
@@ -1229,19 +1239,30 @@ namespace vgfw
                 return false;
             }
 
-            if (initInfo.enableMSAA)
-            {
-                glfwWindowHint(GLFW_SAMPLES, initInfo.aaSample);
-            }
-
             glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
             glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
             glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, VGFW_RENDER_API_OPENGL_MIN_MAJOR);
             glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, VGFW_RENDER_API_OPENGL_MIN_MINOR);
 
-            glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+            glfwSwapInterval(initInfo.enableVSync);
+            glfwWindowHint(GLFW_SAMPLES, static_cast<int>(initInfo.aaSample));
+            glfwWindowHint(GLFW_RESIZABLE, initInfo.isResizable);
 
-            m_Window = glfwCreateWindow(initInfo.width, initInfo.height, initInfo.title.c_str(), nullptr, nullptr);
+            GLFWmonitor*       primaryMonitor = glfwGetPrimaryMonitor();
+            const GLFWvidmode* mode           = glfwGetVideoMode(primaryMonitor);
+
+            GLFWmonitor* requestMonitor = nullptr;
+            int          requestWidth   = initInfo.width;
+            int          requestHeight  = initInfo.height;
+
+            if (initInfo.isFullScreen)
+            {
+                requestMonitor = primaryMonitor;
+                requestWidth   = mode->width;
+                requestHeight  = mode->height;
+            }
+
+            m_Window = glfwCreateWindow(requestWidth, requestHeight, initInfo.title.c_str(), requestMonitor, nullptr);
             if (!m_Window)
             {
                 VGFW_ERROR("Failed to create GLFW window");
@@ -1249,10 +1270,10 @@ namespace vgfw
                 return false;
             }
 
-            m_Data.title     = initInfo.title;
-            m_Data.width     = initInfo.width;
-            m_Data.height    = initInfo.height;
-            m_Data.windowSys = this;
+            m_Data.title          = initInfo.title;
+            m_Data.width          = initInfo.width;
+            m_Data.height         = initInfo.height;
+            m_Data.platformWindow = this;
 
             return true;
         }
@@ -1314,7 +1335,7 @@ namespace vgfw
 
             switch (type)
             {
-                case WindowType::GLFW:
+                case WindowType::eGLFW:
                     window = std::make_shared<GLFWWindow>();
                     break;
             }
@@ -1418,21 +1439,21 @@ namespace vgfw
             switch (type)
             {
                 using enum VertexAttribute::Type;
-                case Float:
+                case eFloat:
                     return sizeof(float);
-                case Float2:
+                case eFloat2:
                     return sizeof(float) * 2;
-                case Float3:
+                case eFloat3:
                     return sizeof(float) * 3;
-                case Float4:
+                case eFloat4:
                     return sizeof(float) * 4;
 
-                case VertexAttribute::Type::Int:
+                case VertexAttribute::Type::eInt:
                     return sizeof(int32_t);
-                case Int4:
+                case eInt4:
                     return sizeof(int32_t) * 4;
 
-                case UByte4_Norm:
+                case eUByte4_Norm:
                     return sizeof(uint8_t) * 4;
             }
             return 0;
@@ -1492,9 +1513,9 @@ namespace vgfw
         {
             m_Attributes.clear();
 
-            setAttribute(AttributeLocation::Position, {.vertType = VertexAttribute::Type::Float3, .offset = 0});
-            setAttribute(AttributeLocation::Normal_Color, {.vertType = VertexAttribute::Type::Float3, .offset = 12});
-            setAttribute(AttributeLocation::TexCoords, {.vertType = VertexAttribute::Type::Float2, .offset = 24});
+            setAttribute(AttributeLocation::ePosition, {.vertType = VertexAttribute::Type::eFloat3, .offset = 0});
+            setAttribute(AttributeLocation::eNormal_Color, {.vertType = VertexAttribute::Type::eFloat3, .offset = 12});
+            setAttribute(AttributeLocation::eTexCoords, {.vertType = VertexAttribute::Type::eFloat2, .offset = 24});
 
             return build();
         }
@@ -1559,46 +1580,46 @@ namespace vgfw
             {
                 using enum PixelFormat;
 
-                case R8_UNorm:
+                case eR8_UNorm:
                     return "R8_Unorm";
 
-                case RGB8_UNorm:
+                case eRGB8_UNorm:
                     return "RGB8_UNorm";
-                case RGBA8_UNorm:
+                case eRGBA8_UNorm:
                     return "RGBA8_UNorm";
 
-                case RGB8_SNorm:
+                case eRGB8_SNorm:
                     return "RGB8_SNorm";
-                case RGBA8_SNorm:
+                case eRGBA8_SNorm:
                     return "RGBA8_SNorm";
 
-                case R16F:
+                case eR16F:
                     return "R16F";
-                case RG16F:
+                case eRG16F:
                     return "RG16F";
-                case RGB16F:
+                case eRGB16F:
                     return "RGB16F";
-                case RGBA16F:
+                case eRGBA16F:
                     return "RGBA16F";
 
-                case RGB32F:
+                case eRGB32F:
                     return "RGB32F";
-                case RGBA32F:
+                case eRGBA32F:
                     return "RGBA32F";
 
-                case R32I:
+                case eR32I:
                     return "R32I";
-                case RGBA32UI:
+                case eRGBA32UI:
                     return "RGBA32UI";
 
-                case Depth16:
+                case eDepth16:
                     return "Depth16";
-                case Depth24:
+                case eDepth24:
                     return "Depth24";
-                case Depth32F:
+                case eDepth32F:
                     return "Depth32F";
 
-                case PixelFormat::Unknown:
+                case PixelFormat::eUnknown:
                     break;
             }
 
@@ -1656,21 +1677,21 @@ namespace vgfw
             switch (type)
             {
                 using enum VertexAttribute::Type;
-                case Float:
+                case eFloat:
                     return {GL_FLOAT, 1, GL_FALSE};
-                case Float2:
+                case eFloat2:
                     return {GL_FLOAT, 2, GL_FALSE};
-                case Float3:
+                case eFloat3:
                     return {GL_FLOAT, 3, GL_FALSE};
-                case Float4:
+                case eFloat4:
                     return {GL_FLOAT, 4, GL_FALSE};
 
-                case Int:
+                case eInt:
                     return {GL_INT, 1, GL_FALSE};
-                case Int4:
+                case eInt4:
                     return {GL_INT, 4, GL_FALSE};
 
-                case UByte4_Norm:
+                case eUByte4_Norm:
                     return {GL_UNSIGNED_BYTE, 4, GL_TRUE};
             }
             return {GL_INVALID_INDEX, 0, GL_FALSE};
@@ -1681,31 +1702,31 @@ namespace vgfw
             GLenum result {GL_NONE};
             switch (minFilter)
             {
-                case TexelFilter::Nearest:
+                case TexelFilter::eNearest:
                     switch (mipmapMode)
                     {
-                        case MipmapMode::None:
+                        case MipmapMode::eNone:
                             result = GL_NEAREST;
                             break;
-                        case MipmapMode::Nearest:
+                        case MipmapMode::eNearest:
                             result = GL_NEAREST_MIPMAP_NEAREST;
                             break;
-                        case MipmapMode::Linear:
+                        case MipmapMode::eLinear:
                             result = GL_NEAREST_MIPMAP_LINEAR;
                             break;
                     }
                     break;
 
-                case TexelFilter::Linear:
+                case TexelFilter::eLinear:
                     switch (mipmapMode)
                     {
-                        case MipmapMode::None:
+                        case MipmapMode::eNone:
                             result = GL_LINEAR;
                             break;
-                        case MipmapMode::Nearest:
+                        case MipmapMode::eNearest:
                             result = GL_LINEAR_MIPMAP_NEAREST;
                             break;
-                        case MipmapMode::Linear:
+                        case MipmapMode::eLinear:
                             result = GL_LINEAR_MIPMAP_LINEAR;
                             break;
                     }
@@ -1733,11 +1754,11 @@ namespace vgfw
         {
             switch (polygonMode)
             {
-                case PolygonMode::Fill:
+                case PolygonMode::eFill:
                     return GL_POLYGON_OFFSET_FILL;
-                case PolygonMode::Line:
+                case PolygonMode::eLine:
                     return GL_POLYGON_OFFSET_LINE;
-                case PolygonMode::Point:
+                case PolygonMode::ePoint:
                     return GL_POLYGON_OFFSET_POINT;
             }
             assert(false);
@@ -1847,7 +1868,7 @@ namespace vgfw
                                                uint32_t    numMipLevels,
                                                uint32_t    numLayers)
         {
-            assert(extent.width > 0 && extent.height > 0 && pixelFormat != PixelFormat::Unknown);
+            assert(extent.width > 0 && extent.height > 0 && pixelFormat != PixelFormat::eUnknown);
 
             if (numMipLevels <= 0)
                 numMipLevels = calcMipLevels(glm::max(extent.width, extent.height));
@@ -1863,7 +1884,7 @@ namespace vgfw
         Texture
         RenderContext::createCubemap(uint32_t size, PixelFormat pixelFormat, uint32_t numMipLevels, uint32_t numLayers)
         {
-            assert(size > 0 && pixelFormat != PixelFormat::Unknown);
+            assert(size > 0 && pixelFormat != PixelFormat::eUnknown);
 
             if (numMipLevels <= 0)
                 numMipLevels = calcMipLevels(size);
@@ -2368,7 +2389,7 @@ namespace vgfw
                 assert(type != GL_INVALID_INDEX);
 
                 glEnableVertexArrayAttrib(vao, location);
-                if (attribute.vertType == VertexAttribute::Type::Int4)
+                if (attribute.vertType == VertexAttribute::Type::eInt4)
                 {
                     glVertexArrayAttribIFormat(vao, location, size, type, attribute.offset);
                 }
@@ -2661,9 +2682,9 @@ namespace vgfw
             auto& current = m_CurrentPipeline.m_RasterizerState.cullMode;
             if (cullMode != current)
             {
-                if (cullMode != CullMode::None)
+                if (cullMode != CullMode::eNone)
                 {
-                    if (current == CullMode::None)
+                    if (current == CullMode::eNone)
                         glEnable(GL_CULL_FACE);
                     glCullFace(static_cast<GLenum>(cullMode));
                 }
@@ -2826,24 +2847,24 @@ namespace vgfw
                     }
 
                     glm::vec4 borderColor {0.0f};
-                    auto      addressMode = SamplerAddressMode::ClampToEdge;
+                    auto      addressMode = SamplerAddressMode::eClampToEdge;
                     switch (desc.wrap)
                     {
-                        case WrapMode::ClampToEdge:
-                            addressMode = SamplerAddressMode::ClampToEdge;
+                        case WrapMode::eClampToEdge:
+                            addressMode = SamplerAddressMode::eClampToEdge;
                             break;
-                        case WrapMode::ClampToOpaqueBlack:
-                            addressMode = SamplerAddressMode::ClampToBorder;
+                        case WrapMode::eClampToOpaqueBlack:
+                            addressMode = SamplerAddressMode::eClampToBorder;
                             borderColor = glm::vec4 {0.0f, 0.0f, 0.0f, 1.0f};
                             break;
-                        case WrapMode::ClampToOpaqueWhite:
-                            addressMode = SamplerAddressMode::ClampToBorder;
+                        case WrapMode::eClampToOpaqueWhite:
+                            addressMode = SamplerAddressMode::eClampToBorder;
                             borderColor = glm::vec4 {1.0f};
                             break;
                     }
                     SamplerInfo samplerInfo {
                         .minFilter    = desc.filter,
-                        .mipmapMode   = desc.numMipLevels > 1 ? MipmapMode::Nearest : MipmapMode::None,
+                        .mipmapMode   = desc.numMipLevels > 1 ? MipmapMode::eNearest : MipmapMode::eNone,
                         .magFilter    = desc.filter,
                         .addressModeS = addressMode,
                         .addressModeT = addressMode,
@@ -2851,7 +2872,7 @@ namespace vgfw
                         .borderColor  = borderColor,
                     };
                     if (desc.shadowSampler)
-                        samplerInfo.compareOperator = CompareOp::LessOrEqual;
+                        samplerInfo.compareOperator = CompareOp::eLessOrEqual;
                     m_RenderContext.setupSampler(texture, samplerInfo);
 
                     m_Textures.push_back(std::make_unique<Texture>(std::move(texture)));
@@ -3117,7 +3138,7 @@ namespace vgfw
 
             // Load index buffer & vertex buffer
             auto indexBuf = renderer::getRenderContext().createIndexBuffer(
-                renderer::IndexType::UInt32, indices.size(), indices.data());
+                renderer::IndexType::eUInt32, indices.size(), indices.data());
             auto vertexBuf = renderer::getRenderContext().createVertexBuffer(
                 vertexFormat->getStride(), vertexCount, vertices.data());
 
@@ -3172,20 +3193,20 @@ namespace vgfw
                 .dataType = static_cast<GLenum>(hdr ? GL_FLOAT : GL_UNSIGNED_BYTE),
                 .pixels   = pixels,
             };
-            renderer::PixelFormat pixelFormat {renderer::PixelFormat::Unknown};
+            renderer::PixelFormat pixelFormat {renderer::PixelFormat::eUnknown};
             switch (numChannels)
             {
                 case 1:
                     imageData.format = GL_RED;
-                    pixelFormat      = renderer::PixelFormat::R8_UNorm;
+                    pixelFormat      = renderer::PixelFormat::eR8_UNorm;
                     break;
                 case 3:
                     imageData.format = GL_RGB;
-                    pixelFormat      = hdr ? renderer::PixelFormat::RGB16F : renderer::PixelFormat::RGB8_UNorm;
+                    pixelFormat      = hdr ? renderer::PixelFormat::eRGB16F : renderer::PixelFormat::eRGB8_UNorm;
                     break;
                 case 4:
                     imageData.format = GL_RGBA;
-                    pixelFormat      = hdr ? renderer::PixelFormat::RGBA16F : renderer::PixelFormat::RGBA8_UNorm;
+                    pixelFormat      = hdr ? renderer::PixelFormat::eRGBA16F : renderer::PixelFormat::eRGBA8_UNorm;
                     break;
 
                 default:
@@ -3201,9 +3222,9 @@ namespace vgfw
             rc.upload(texture, 0, {width, height}, imageData)
                 .setupSampler(texture,
                               {
-                                  .minFilter     = renderer::TexelFilter::Linear,
-                                  .mipmapMode    = renderer::MipmapMode::Linear,
-                                  .magFilter     = renderer::TexelFilter::Linear,
+                                  .minFilter     = renderer::TexelFilter::eLinear,
+                                  .mipmapMode    = renderer::MipmapMode::eLinear,
+                                  .magFilter     = renderer::TexelFilter::eLinear,
                                   .maxAnisotropy = 16.0f,
                               });
             stbi_image_free(pixels);
@@ -3317,23 +3338,23 @@ namespace vgfw
                 }
 
                 vertexFormatBuilder.setAttribute(
-                    renderer::AttributeLocation::Position,
-                    {.vertType = vgfw::renderer::VertexAttribute::Type::Float3, .offset = attributeOffset});
+                    renderer::AttributeLocation::ePosition,
+                    {.vertType = vgfw::renderer::VertexAttribute::Type::eFloat3, .offset = attributeOffset});
                 attributeOffset += sizeof(float) * 3;
 
                 if (hasNormal)
                 {
                     vertexFormatBuilder.setAttribute(
-                        renderer::AttributeLocation::Normal_Color,
-                        {.vertType = vgfw::renderer::VertexAttribute::Type::Float3, .offset = attributeOffset});
+                        renderer::AttributeLocation::eNormal_Color,
+                        {.vertType = vgfw::renderer::VertexAttribute::Type::eFloat3, .offset = attributeOffset});
                     attributeOffset += sizeof(float) * 3;
                 }
 
                 if (hasTexCoords)
                 {
                     vertexFormatBuilder.setAttribute(
-                        renderer::AttributeLocation::TexCoords,
-                        {.vertType = vgfw::renderer::VertexAttribute::Type::Float2, .offset = attributeOffset});
+                        renderer::AttributeLocation::eTexCoords,
+                        {.vertType = vgfw::renderer::VertexAttribute::Type::eFloat2, .offset = attributeOffset});
                     attributeOffset += sizeof(float) * 2;
                 }
 
@@ -3476,8 +3497,8 @@ namespace vgfw
                     }
 
                     vertexFormatBuilder.setAttribute(
-                        renderer::AttributeLocation::Position,
-                        {.vertType = vgfw::renderer::VertexAttribute::Type::Float3, .offset = attributeOffset});
+                        renderer::AttributeLocation::ePosition,
+                        {.vertType = vgfw::renderer::VertexAttribute::Type::eFloat3, .offset = attributeOffset});
                     attributeOffset += sizeof(float) * 3;
 
                     if (primitive.attributes.find("NORMAL") != primitive.attributes.end())
@@ -3496,8 +3517,8 @@ namespace vgfw
                         }
 
                         vertexFormatBuilder.setAttribute(
-                            renderer::AttributeLocation::Normal_Color,
-                            {.vertType = vgfw::renderer::VertexAttribute::Type::Float3, .offset = attributeOffset});
+                            renderer::AttributeLocation::eNormal_Color,
+                            {.vertType = vgfw::renderer::VertexAttribute::Type::eFloat3, .offset = attributeOffset});
                         attributeOffset += sizeof(float) * 3;
                     }
 
@@ -3519,8 +3540,8 @@ namespace vgfw
                         }
 
                         vertexFormatBuilder.setAttribute(
-                            renderer::AttributeLocation::TexCoords,
-                            {.vertType = vgfw::renderer::VertexAttribute::Type::Float2, .offset = attributeOffset});
+                            renderer::AttributeLocation::eTexCoords,
+                            {.vertType = vgfw::renderer::VertexAttribute::Type::eFloat2, .offset = attributeOffset});
                         attributeOffset += sizeof(float) * 2;
                     }
 
@@ -3541,8 +3562,8 @@ namespace vgfw
                         }
 
                         vertexFormatBuilder.setAttribute(
-                            renderer::AttributeLocation::Tangent,
-                            {.vertType = vgfw::renderer::VertexAttribute::Type::Float4, .offset = attributeOffset});
+                            renderer::AttributeLocation::eTangent,
+                            {.vertType = vgfw::renderer::VertexAttribute::Type::eFloat4, .offset = attributeOffset});
                         attributeOffset += sizeof(float) * 4;
                     }
 

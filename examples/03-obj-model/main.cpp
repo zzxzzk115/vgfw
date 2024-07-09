@@ -76,7 +76,7 @@ int main()
     }
 
     // Create a window instance
-    auto window = vgfw::window::create({.title = "03-obj-model", .enableMSAA = true, .aaSample = 8});
+    auto window = vgfw::window::create({.title = "03-obj-model", .aaSample = vgfw::window::AASample::e8});
 
     // Init renderer
     vgfw::renderer::init({.window = window});
@@ -102,11 +102,11 @@ int main()
                                 .setDepthStencil({
                                     .depthTest      = true,
                                     .depthWrite     = true,
-                                    .depthCompareOp = vgfw::renderer::CompareOp::Less,
+                                    .depthCompareOp = vgfw::renderer::CompareOp::eLess,
                                 })
                                 .setRasterizerState({
-                                    .polygonMode = vgfw::renderer::PolygonMode::Fill,
-                                    .cullMode    = vgfw::renderer::CullMode::Back,
+                                    .polygonMode = vgfw::renderer::PolygonMode::eFill,
+                                    .cullMode    = vgfw::renderer::CullMode::eBack,
                                     .scissorTest = false,
                                 })
                                 .setVAO(vao)
