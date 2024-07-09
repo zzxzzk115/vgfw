@@ -42,6 +42,7 @@ layout(location = 3) uniform vec3 lightPos;
 layout(location = 4) uniform vec3 viewPos;
 layout(location = 5) uniform vec3 lightColor;
 layout(location = 6) uniform vec3 objectColor;
+layout(location = 7) uniform float lightIntensity;
 
 
 // Cook-Torrance GGX (Trowbridge-Reitz) Distribution
@@ -97,13 +98,13 @@ void main()
     float roughness = texSample.g;
 
     // Ambient
-    vec3 ambient = lightColor * 0.03;
+    vec3 ambient = lightIntensity * lightColor * 0.03;
 
     // Diffuse
     vec3 norm = normalize(vNormal); // Use vertex normal directly
     vec3 lightDir = normalize(lightPos - vFragPos);
     float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = diff * lightColor;
+    vec3 diffuse = lightIntensity * diff * lightColor;
 
     // Specular (Cook-Torrance BRDF)
     vec3 viewDir = normalize(viewPos - vFragPos);
@@ -175,8 +176,8 @@ int main()
         suzanneModel
             .textureMap[suzanneModel.materialMap[suzanneModel.meshPrimitives[0].materialIndex].baseColorTextureIndex];
     auto* metallicRoughnessTexture =
-        suzanneModel
-            .textureMap[suzanneModel.materialMap[suzanneModel.meshPrimitives[0].materialIndex].metallicRoughnessTextureIndex];
+        suzanneModel.textureMap[suzanneModel.materialMap[suzanneModel.meshPrimitives[0].materialIndex]
+                                    .metallicRoughnessTextureIndex];
 
     // Start time
     auto startTime = std::chrono::high_resolution_clock::now();
@@ -189,6 +190,7 @@ int main()
     glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
     glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
     glm::vec3 objectColor(1.0f, 1.0f, 1.0f);
+    float     lightIntensity = 20.0f;
 
     // Main loop
     while (!window->shouldClose())
@@ -221,17 +223,17 @@ int main()
             .setUniformVec3("viewPos", viewPos)
             .setUniformVec3("lightColor", lightColor)
             .setUniformVec3("objectColor", objectColor)
+            .setUniform1f("lightIntensity", lightIntensity)
             .bindTexture(0, *baseColorTexture)
-            .bindTexture(1, *metallicRoughnessTexture)
-            .draw(*suzanneModel.meshPrimitives[0].vertexBuffer,
-                  *suzanneModel.meshPrimitives[0].indexBuffer,
-                  suzanneModel.meshPrimitives[0].indexCount,
-                  suzanneModel.meshPrimitives[0].vertexCount);
+            .bindTexture(1, *metallicRoughnessTexture);
+
+        suzanneModel.meshPrimitives[0].draw(rc);
 
         vgfw::renderer::beginImGui();
         ImGui::Begin("GLTF Model");
         ImGui::SliderFloat("Camera FOV", &fov, 1.0f, 179.0f);
         ImGui::DragFloat3("Camera Position", glm::value_ptr(viewPos));
+        ImGui::DragFloat("Light Intensity", &lightIntensity);
         ImGui::DragFloat3("Light Position", glm::value_ptr(lightPos));
         ImGui::ColorEdit3("Light Color", glm::value_ptr(lightColor));
         ImGui::ColorEdit3("Object Color", glm::value_ptr(objectColor));

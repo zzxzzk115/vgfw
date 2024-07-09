@@ -82,11 +82,9 @@ int main()
                 .setUniformMat4("projection", projection)
                 .setUniformVec3("viewPos", cameraPos)
                 .bindTexture(0,
-                             *sponza.textureMap[sponza.materialMap[meshPrimitive.materialIndex].baseColorTextureIndex])
-                .draw(*meshPrimitive.vertexBuffer,
-                      *meshPrimitive.indexBuffer,
-                      meshPrimitive.indexCount,
-                      meshPrimitive.vertexCount);
+                             *sponza.textureMap[sponza.materialMap[meshPrimitive.materialIndex].baseColorTextureIndex]);
+
+            meshPrimitive.draw(rc);
         }
 
         vgfw::renderer::beginImGui();

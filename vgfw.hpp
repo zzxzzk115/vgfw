@@ -1081,6 +1081,7 @@ namespace vgfw
             std::shared_ptr<renderer::VertexBuffer> vertexBuffer {nullptr};
 
             void build(renderer::VertexFormat::Builder& vertexFormatBuilder);
+            void draw(renderer::RenderContext& rc) const;
         };
 
         struct Material
@@ -3126,6 +3127,12 @@ namespace vgfw
             vertexBuffer = std::shared_ptr<renderer::VertexBuffer>(
                 new renderer::VertexBuffer {std::move(vertexBuf)},
                 renderer::RenderContext::ResourceDeleter {renderer::getRenderContext()});
+        }
+
+        void MeshPrimitive::draw(renderer::RenderContext& rc) const
+        {
+            assert(vertexBuffer && indexBuffer);
+            rc.draw(*vertexBuffer, *indexBuffer, indexCount, vertexCount);
         }
     } // namespace resource
 
