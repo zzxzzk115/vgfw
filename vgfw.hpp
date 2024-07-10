@@ -1118,7 +1118,10 @@ namespace vgfw
             std::vector<vgfw::renderer::Texture*> textures;
             std::vector<Material>                 materials;
 
-            void bindMeshPrimitiveTextures(uint32_t primitiveIndex, uint32_t unit, renderer::RenderContext& rc) const;
+            void bindMeshPrimitiveTextures(uint32_t                 primitiveIndex,
+                                           uint32_t                 unit,
+                                           renderer::RenderContext& rc,
+                                           std::optional<GLuint>    samplerId = {}) const;
         };
     } // namespace resource
 
@@ -3177,7 +3180,10 @@ namespace vgfw
             rc.draw(*vertexBuffer, *indexBuffer, indexCount, vertexCount);
         }
 
-        void Model::bindMeshPrimitiveTextures(uint32_t primitiveIndex, uint32_t unit, renderer::RenderContext& rc) const
+        void Model::bindMeshPrimitiveTextures(uint32_t                 primitiveIndex,
+                                              uint32_t                 unit,
+                                              renderer::RenderContext& rc,
+                                              std::optional<GLuint>    samplerId) const
         {
             assert(primitiveIndex >= 0 && primitiveIndex < meshPrimitives.size());
 
@@ -3185,7 +3191,7 @@ namespace vgfw
 
             for (uint32_t i = 0; i < primitive.textureIndices.size(); ++i)
             {
-                rc.bindTexture(unit + i, *textures[primitive.textureIndices[i]]);
+                rc.bindTexture(unit + i, *textures[primitive.textureIndices[i]], samplerId);
             }
         }
     } // namespace resource
@@ -3443,7 +3449,7 @@ namespace vgfw
             for (const auto& texture : gltfModel.textures)
             {
                 const auto&              image         = gltfModel.images[texture.source];
-                vgfw::renderer::Texture* loadedTexture = vgfw::io::load(modelPath.parent_path() / image.uri, rc);
+                vgfw::renderer::Texture* loadedTexture = vgfw::io::load(modelPath.parent_path() / image.uri, rc, false);
                 model.textures[texture.source]         = loadedTexture;
             }
 

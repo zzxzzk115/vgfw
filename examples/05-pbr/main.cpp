@@ -3,7 +3,17 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/rotate_vector.hpp>
 
+struct DirectionalLight
+{
+    glm::vec3 direction = glm::normalize(glm::vec3(1.0f, -1.0f, 0.0f));
+    float     intensity = 0.5f;
+    glm::vec3 color     = {1, 1, 1};
+};
+
 glm::vec3 getFrontVector(float yaw, float pitch);
+void      uploadLight(const std::shared_ptr<vgfw::renderer::Buffer>& lightBuffer,
+                      const DirectionalLight&                        light,
+                      vgfw::renderer::RenderContext&                 rc);
 
 int main()
 {
@@ -34,11 +44,20 @@ int main()
     auto program = rc.createGraphicsProgram(vgfw::utils::readFileAllText("shaders/default.vert"),
                                             vgfw::utils::readFileAllText("shaders/default.frag"));
 
+    DirectionalLight light {};
+
+    auto lightBuf    = rc.createBuffer(sizeof(DirectionalLight), &light);
+    auto lightBuffer = std::shared_ptr<vgfw::renderer::Buffer>(new vgfw::renderer::Buffer {std::move(lightBuf)},
+                                                               vgfw::renderer::RenderContext::ResourceDeleter {rc});
+
     // Camera properties
     glm::vec3 cameraPos(-1150, 200, -45);
     float     fov   = 60.0f;
     float     yaw   = 90.0f;
     float     pitch = 0.0f;
+
+    // Create a texture sampler
+    auto sampler = rc.createSampler({.maxAnisotropy=8});
 
     // Main loop
     while (!window->shouldClose())
@@ -51,6 +70,8 @@ int main()
         // Create the projection matrix
         glm::mat4 projection =
             glm::perspective(glm::radians(fov), window->getWidth() * 1.0f / window->getHeight(), 1.0f, 10000.0f);
+
+        uploadLight(lightBuffer, light, rc);
 
         // Render
         rc.beginRendering({.extent = {.width = window->getWidth(), .height = window->getHeight()}},
@@ -83,9 +104,10 @@ int main()
                 .setUniformMat4("view", view)
                 .setUniformMat4("projection", projection)
                 .setUniformVec3("viewPos", cameraPos)
-                .bindUniformBuffer(0, *meshPrimitive.materialBuffer);
+                .bindUniformBuffer(0, *meshPrimitive.materialBuffer)
+                .bindUniformBuffer(1, *lightBuffer);
 
-            sponza.bindMeshPrimitiveTextures(primitiveIndex, 1, rc);
+            sponza.bindMeshPrimitiveTextures(primitiveIndex, 2, rc, sampler);
 
             meshPrimitive.draw(rc);
         }
@@ -109,4 +131,11 @@ int main()
 glm::vec3 getFrontVector(float yaw, float pitch)
 {
     return glm::rotateY(glm::rotateX(glm::vec3(0, 0, 1), glm::radians(pitch)), glm::radians(yaw));
+}
+
+void uploadLight(const std::shared_ptr<vgfw::renderer::Buffer>& lightBuffer,
+                 const DirectionalLight&                        light,
+                 vgfw::renderer::RenderContext&                 rc)
+{
+    rc.upload(*lightBuffer, 0, sizeof(DirectionalLight), &light);
 }

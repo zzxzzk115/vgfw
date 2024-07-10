@@ -89,17 +89,15 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
 }
 
 // Schlick's approximation for the Fresnel term
-vec3 fresnelSchlick(float cosTheta, vec3 F0)
+vec3 FresnelSchlick(float cosTheta, vec3 F0)
 {
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
 void main()
 {
-    vec2 uv = vec2(vTexCoords.x, 1.0 - vTexCoords.y);
-
     // Retrieve material properties from metallicRoughness texture
-    vec4 texSample = texture(pbrTextures[uMaterial.metallicRoughnessTextureIndex], uv);
+    vec4 texSample = texture(pbrTextures[uMaterial.metallicRoughnessTextureIndex], vTexCoords);
     float metallic = texSample.b;
     float roughness = texSample.g;
 
@@ -119,14 +117,14 @@ void main()
     float NDF = DistributionGGX(norm, halfwayDir, roughness);
     float G = GeometrySmith(norm, viewDir, lightDir, roughness);
     vec3 F0 = vec3(0.04); // default specular reflectance
-    vec3 F = fresnelSchlick(max(dot(halfwayDir, viewDir), 0.0), F0);
+    vec3 F = FresnelSchlick(max(dot(halfwayDir, viewDir), 0.0), F0);
     vec3 specular = (NDF * G * F) / (4.0 * max(dot(norm, viewDir), 0.0) * max(dot(norm, lightDir), 0.0));
 
     // Combine ambient, diffuse, and specular components
     vec3 result = (ambient + (1.0 - metallic) * diffuse + metallic * specular) * objectColor;
 
     // Output final color with baseColor texture
-    FragColor = texture(pbrTextures[uMaterial.baseColorTextureIndex], uv) * vec4(result, 1.0);
+    FragColor = texture(pbrTextures[uMaterial.baseColorTextureIndex], vTexCoords) * vec4(result, 1.0);
 }
 )";
 

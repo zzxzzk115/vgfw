@@ -44,7 +44,7 @@ rule_end()
 
 rule("preprocess_shaders")
     set_extensions(".vert", ".frag", ".geom", ".glsl")
-    
+
     on_build_file(function (target, sourcefile, opt)
         if path.extension(sourcefile) == ".glsl" then
             print("Ignoring .glsl as a shader library file: " .. sourcefile)
@@ -55,7 +55,7 @@ rule("preprocess_shaders")
         local target_shaders_dir = path.join(target:targetdir(), "shaders")
         local output_path = path.join(target_shaders_dir, path.filename(sourcefile))
         os.mkdir(target_shaders_dir)
-        os.execv("glslc", {"-I", shader_root, "-E", sourcefile, "-o", output_path})
+        os.execv("glslc", {"-I", shader_root, "-E", sourcefile, is_mode("debug") and "-O0" or "-Os", "-o", output_path})
         print("Preprocessing shader: " .. sourcefile .. " -> " .. output_path)
     end)
 rule_end()
