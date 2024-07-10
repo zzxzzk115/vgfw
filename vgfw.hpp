@@ -1,9 +1,8 @@
 /**
  * @file vgfw.hpp
  * @author Kexuan Zhang (zzxzzk115@gmail.com)
- * @brief
- * @version 0.1.0
- * @date 2024-07-07
+ * @brief VGFW (V Graphics FrameWork) is a library designed for rapidly creating graphics prototypes.
+ * @version 1.0.0
  *
  * @copyright Copyright (c) 2024
  *
@@ -60,6 +59,7 @@
 #include <cstring>
 #include <filesystem>
 #include <iostream>
+#include <limits>
 #include <map>
 #include <memory>
 #include <numeric>
@@ -120,6 +120,20 @@ namespace vgfw
 
     namespace math
     {
+        struct AABB
+        {
+            glm::vec3 min, max;
+
+            glm::vec3 getExtent() const;
+            glm::vec3 getCenter() const;
+            float     getRadius() const;
+
+            void merge(const AABB& other);
+            AABB transform(const glm::mat4&) const;
+
+            auto operator<=>(const AABB&) const = delete;
+        };
+
         inline constexpr bool isPowerOf2(uint32_t v) { return v && !(v & (v - 1)); }
     } // namespace math
 
@@ -1107,6 +1121,8 @@ namespace vgfw
             std::shared_ptr<renderer::Buffer> materialBuffer {nullptr};
             std::vector<uint32_t>             textureIndices;
 
+            math::AABB aabb {};
+
             void build(renderer::VertexFormat::Builder& vertexFormatBuilder, renderer::RenderContext& rc);
             void draw(renderer::RenderContext& rc) const;
         };
@@ -1214,6 +1230,42 @@ namespace vgfw
             return buffer.str();
         }
     } // namespace utils
+
+    namespace math
+    {
+        glm::vec3 AABB::getExtent() const { return max - min; }
+        glm::vec3 AABB::getCenter() const { return (max + min) * 0.5f; }
+        float     AABB::getRadius() const { return glm::length(getExtent() * 0.5f); }
+
+        void AABB::merge(const AABB& other)
+        {
+            min.x = std::min(min.x, other.min.x);
+            min.y = std::min(min.y, other.min.y);
+            min.z = std::min(min.z, other.min.z);
+
+            max.x = std::max(max.x, other.max.x);
+            max.y = std::max(max.y, other.max.y);
+            max.z = std::max(max.z, other.max.z);
+        }
+
+        // https://dev.theomader.com/transform-bounding-boxes/
+        AABB AABB::transform(const glm::mat4& m) const
+        {
+            const auto xa = m[0] * min.x;
+            const auto xb = m[0] * max.x;
+
+            const auto ya = m[1] * min.y;
+            const auto yb = m[1] * max.y;
+
+            const auto za = m[2] * min.z;
+            const auto zb = m[2] * max.z;
+
+            return {
+                .min = {glm::min(xa, xb) + glm::min(ya, yb) + glm::min(za, zb) + m[3]},
+                .max = {glm::max(xa, xb) + glm::max(ya, yb) + glm::max(za, zb) + m[3]},
+            };
+        }
+    } // namespace math
 
     namespace log
     {
@@ -3127,8 +3179,24 @@ namespace vgfw
             bool hasTexCoords = !record.texcoords.empty();
             bool hasTangent   = !record.tangents.empty();
 
+            float floatMax = std::numeric_limits<float>::max();
+
+            aabb.min = {floatMax, floatMax, floatMax};
+            aabb.max = {-floatMax, -floatMax, -floatMax};
+
             for (uint32_t v = 0; v < vertexCount; ++v)
             {
+                // clang-format off
+                // update AABB
+                if (record.positions[v].x < aabb.min.x) aabb.min.x = record.positions[v].x;
+                if (record.positions[v].y < aabb.min.y) aabb.min.y = record.positions[v].y;
+                if (record.positions[v].z < aabb.min.z) aabb.min.z = record.positions[v].z;
+
+                if (record.positions[v].x > aabb.max.x) aabb.max.x = record.positions[v].x;
+                if (record.positions[v].y > aabb.max.y) aabb.max.y = record.positions[v].y;
+                if (record.positions[v].z > aabb.max.z) aabb.max.z = record.positions[v].z;
+                // clang-format on
+
                 // fill position
                 vertices.push_back(record.positions[v].x);
                 vertices.push_back(record.positions[v].y);
