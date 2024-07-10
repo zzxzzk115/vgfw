@@ -10,10 +10,11 @@ target("05-pbr")
     set_values("shader_root", "$(scriptdir)/shaders")
 
     -- add rules
-    add_rules("copy_assets", "preprocess_shaders")
+    add_rules("copy_assets", "imguiconfig", "preprocess_shaders")
 
     -- add source files
     add_files("main.cpp")
+    add_files("imgui.ini")
 
     -- add shaders
     add_files("shaders/**")

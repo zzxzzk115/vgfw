@@ -7,10 +7,11 @@ target("04-gltf-model")
     set_values("asset_files", "assets/models/Suzanne/**")
 
     -- add rules
-    add_rules("copy_assets")
+    add_rules("copy_assets", "imguiconfig")
 
     -- add source files
     add_files("main.cpp")
+    add_files("imgui.ini")
 
     -- add deps
     add_deps("vgfw")

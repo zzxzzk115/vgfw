@@ -28,7 +28,7 @@ end
 
 -- global rules
 rule("copy_assets")
-    before_build(function (target)
+    after_build(function (target)
         local asset_files = target:values("asset_files")
         if asset_files then
             for _, file in ipairs(asset_files) do
@@ -42,10 +42,28 @@ rule("copy_assets")
     end)
 rule_end()
 
+-- global rules
+rule("imguiconfig")
+    set_extensions(".ini")
+
+    on_build_file(function (target, sourcefile, opt) end)
+
+    after_build_file(function (target, sourcefile, opt)
+        if path.basename(sourcefile) ~= "imgui" then
+            return
+        end
+        local output_path = path.join(target:targetdir(), path.filename(sourcefile))
+        os.cp(sourcefile, output_path)
+        print("Copying imgui config: " .. sourcefile .. " -> " .. output_path)
+    end)
+rule_end()
+
 rule("preprocess_shaders")
     set_extensions(".vert", ".frag", ".geom", ".glsl")
 
-    on_build_file(function (target, sourcefile, opt)
+    on_build_file(function (target, sourcefile, opt) end)
+
+    after_build_file(function (target, sourcefile, opt)
         if path.extension(sourcefile) == ".glsl" then
             print("Ignoring .glsl as a shader library file: " .. sourcefile)
             return
