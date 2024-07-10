@@ -220,10 +220,9 @@ int main()
             .setUniformVec3("lightColor", lightColor)
             .setUniformVec3("objectColor", objectColor)
             .setUniform1f("lightIntensity", lightIntensity)
-            .bindUniformBuffer(0, *suzanneModel.meshPrimitives[0].materialBuffer);
-
-        suzanneModel.bindMeshPrimitiveTextures(0, 1, rc);
-        suzanneModel.meshPrimitives[0].draw(rc);
+            .bindMeshPrimitiveMaterialBuffer(0, suzanneModel.meshPrimitives[0])
+            .bindMeshPrimitiveTextures(1, suzanneModel.meshPrimitives[0])
+            .drawMeshPrimitive(suzanneModel.meshPrimitives[0]);
 
         vgfw::renderer::beginImGui();
         ImGui::Begin("GLTF Model");

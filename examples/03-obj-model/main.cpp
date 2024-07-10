@@ -159,9 +159,8 @@ int main()
             .setUniformVec3("viewPos", viewPos)
             .setUniformVec3("lightColor", lightColor)
             .setUniformVec3("objectColor", objectColor)
-            .bindTexture(0, *spotTexture);
-
-        spotModel.meshPrimitives[0].draw(rc);
+            .bindTexture(0, *spotTexture)
+            .drawMeshPrimitive(spotModel.meshPrimitives[0]);
 
         vgfw::renderer::beginImGui();
         ImGui::Begin("OBJ Model");

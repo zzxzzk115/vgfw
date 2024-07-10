@@ -1,13 +1,7 @@
 #include "vgfw.hpp"
 
-#include <chrono>
-
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/rotate_vector.hpp>
-
-using Clock     = std::chrono::high_resolution_clock;
-using TimePoint = std::chrono::time_point<Clock>;
-using Duration  = std::chrono::duration<float>;
 
 struct DirectionalLight
 {
@@ -93,14 +87,14 @@ int main()
     // Create a texture sampler
     auto sampler = rc.createSampler({.maxAnisotropy = 8});
 
-    TimePoint lastTime = Clock::now();
+    vgfw::time::TimePoint lastTime = vgfw::time::Clock::now();
 
     // Main loop
     while (!window->shouldClose())
     {
-        TimePoint currentTime = Clock::now();
-        Duration  deltaTime   = currentTime - lastTime;
-        lastTime              = currentTime;
+        vgfw::time::TimePoint currentTime = vgfw::time::Clock::now();
+        vgfw::time::Duration  deltaTime   = currentTime - lastTime;
+        lastTime                          = currentTime;
 
         float deltaTimeSeconds = deltaTime.count();
 
@@ -116,10 +110,8 @@ int main()
                           glm::vec4 {0.2f, 0.3f, 0.3f, 1.0f},
                           1.0f);
 
-        for (uint32_t primitiveIndex = 0; primitiveIndex < sponza.meshPrimitives.size(); ++primitiveIndex)
+        for (auto& meshPrimitive : sponza.meshPrimitives)
         {
-            auto& meshPrimitive = sponza.meshPrimitives[primitiveIndex];
-
             auto vao = rc.getVertexArray(meshPrimitive.vertexFormat->getAttributes());
 
             // Build a graphics pipeline
@@ -141,11 +133,9 @@ int main()
             rc.bindGraphicsPipeline(graphicsPipeline)
                 .bindUniformBuffer(0, *cameraBuffer)
                 .bindUniformBuffer(1, *lightBuffer)
-                .bindUniformBuffer(2, *meshPrimitive.materialBuffer);
-
-            sponza.bindMeshPrimitiveTextures(primitiveIndex, 3, rc, sampler);
-
-            meshPrimitive.draw(rc);
+                .bindMeshPrimitiveMaterialBuffer(2, meshPrimitive)
+                .bindMeshPrimitiveTextures(3, meshPrimitive, sampler)
+                .drawMeshPrimitive(meshPrimitive);
         }
 
         vgfw::renderer::beginImGui();

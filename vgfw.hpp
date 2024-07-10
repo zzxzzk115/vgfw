@@ -55,6 +55,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cstdint>
 #include <cstring>
 #include <filesystem>
@@ -109,6 +110,11 @@ namespace vgfw
     {
         class GraphicsContext;
     }
+    namespace resource
+    {
+        class MeshPrimitive;
+        class Model;
+    } // namespace resource
 
     namespace utils
     {
@@ -117,6 +123,13 @@ namespace vgfw
 
         std::string readFileAllText(const std::filesystem::path& filePath);
     } // namespace utils
+
+    namespace time
+    {
+        using Clock     = std::chrono::high_resolution_clock;
+        using TimePoint = std::chrono::time_point<Clock>;
+        using Duration  = std::chrono::duration<float>;
+    } // namespace time
 
     namespace math
     {
@@ -884,6 +897,10 @@ namespace vgfw
             RenderContext& bindTexture(GLuint unit, const Texture&, std::optional<GLuint> samplerId = {});
             RenderContext& bindUniformBuffer(GLuint index, const UniformBuffer&);
             RenderContext& bindStorageBuffer(GLuint index, const StorageBuffer&);
+            RenderContext& bindMeshPrimitiveMaterialBuffer(GLuint index, const resource::MeshPrimitive& meshPrimitive);
+            RenderContext& bindMeshPrimitiveTextures(GLuint                         index,
+                                                     const resource::MeshPrimitive& meshPrimitive,
+                                                     std::optional<GLuint>          samplerId = {});
 
             RenderContext& drawFullScreenTriangle();
             RenderContext& drawCube();
@@ -892,6 +909,7 @@ namespace vgfw
                                 uint32_t                              numIndices,
                                 uint32_t                              numVertices,
                                 uint32_t                              numInstances = 1);
+            RenderContext& drawMeshPrimitive(const resource::MeshPrimitive& meshPrimitive);
 
             struct ResourceDeleter
             {
@@ -1123,7 +1141,13 @@ namespace vgfw
 
             math::AABB aabb {};
 
+            int              indexInOwnerModel {-1};
+            resource::Model* ownerModel {nullptr};
+
             void build(renderer::VertexFormat::Builder& vertexFormatBuilder, renderer::RenderContext& rc);
+
+        private:
+            friend class renderer::RenderContext;
             void draw(renderer::RenderContext& rc) const;
         };
 
@@ -1134,6 +1158,8 @@ namespace vgfw
             std::vector<vgfw::renderer::Texture*> textures;
             std::vector<Material>                 materials;
 
+        private:
+            friend class renderer::RenderContext;
             void bindMeshPrimitiveTextures(uint32_t                 primitiveIndex,
                                            uint32_t                 unit,
                                            renderer::RenderContext& rc,
@@ -1428,7 +1454,7 @@ namespace vgfw
             {
                 int minMajor = getMinMajor();
                 int minMinor = getMinMinor();
-                VGFW_INFO("[OpenGLContext] Loaded {0}.{1}", GLVersion.major, GLVersion.minor);
+                VGFW_INFO("[GraphicsContext] Loaded OpenGL {0}.{1}", GLVersion.major, GLVersion.minor);
 
                 std::stringstream ss;
                 ss << "    Vendor:       " << glGetString(GL_VENDOR) << std::endl;
@@ -1436,7 +1462,7 @@ namespace vgfw
                 ss << "    Renderer:     " << glGetString(GL_RENDERER) << std::endl;
                 ss << "    GLSL Version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
 
-                VGFW_INFO("[OpenGLContext] GL Context Info:\n {0}", ss.str());
+                VGFW_INFO("[GraphicsContext] OpenGL Context Info:\n {0}", ss.str());
 
                 assert(GLVersion.major > minMajor || (GLVersion.major == minMajor && GLVersion.minor >= minMinor));
             }
@@ -2424,6 +2450,21 @@ namespace vgfw
             return *this;
         }
 
+        RenderContext& RenderContext::bindMeshPrimitiveMaterialBuffer(GLuint                         index,
+                                                                      const resource::MeshPrimitive& meshPrimitive)
+        {
+            return bindUniformBuffer(index, *meshPrimitive.materialBuffer);
+        }
+
+        RenderContext& RenderContext::bindMeshPrimitiveTextures(GLuint                         index,
+                                                                const resource::MeshPrimitive& meshPrimitive,
+                                                                std::optional<GLuint>          samplerId)
+        {
+            meshPrimitive.ownerModel->bindMeshPrimitiveTextures(
+                meshPrimitive.indexInOwnerModel, index, *this, samplerId);
+            return *this;
+        }
+
         RenderContext& RenderContext::drawFullScreenTriangle() { return draw({}, {}, 0, 3); }
 
         RenderContext& RenderContext::drawCube() { return draw({}, {}, 0, 36); }
@@ -2447,6 +2488,12 @@ namespace vgfw
             {
                 glDrawArraysInstanced(GL_TRIANGLES, 0, numVertices, numInstances);
             }
+            return *this;
+        }
+
+        RenderContext& RenderContext::drawMeshPrimitive(const resource::MeshPrimitive& meshPrimitive)
+        {
+            meshPrimitive.draw(*this);
             return *this;
         }
 
@@ -3342,6 +3389,8 @@ namespace vgfw
             auto* newTexture  = new renderer::Texture {std::move(texture)};
             g_TextureCache[h] = newTexture;
 
+            VGFW_TRACE("[IO] Loaded texture: {0}", texturePath.generic_string());
+
             return newTexture;
         }
 
@@ -3465,6 +3514,8 @@ namespace vgfw
                     attributeOffset += sizeof(float) * 2;
                 }
 
+                meshPrimitive.ownerModel        = &model;
+                meshPrimitive.indexInOwnerModel = model.meshPrimitives.size() - 1;
                 meshPrimitive.build(vertexFormatBuilder, rc);
             }
 
@@ -3714,6 +3765,8 @@ namespace vgfw
                         meshPrimitive.textureIndices.push_back(material.emissiveTextureIndex);
                     }
 
+                    meshPrimitive.ownerModel        = &model;
+                    meshPrimitive.indexInOwnerModel = model.meshPrimitives.size() - 1;
                     meshPrimitive.build(vertexFormatBuilder, rc);
                 }
             }
