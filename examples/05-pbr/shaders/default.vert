@@ -9,11 +9,14 @@ layout(location = 0) out vec2 vTexCoords;
 layout(location = 1) out vec3 vFragPos;
 layout(location = 2) out mat3 vTBN;
 
-layout(location = 0) uniform mat4 view;
-layout(location = 1) uniform mat4 projection;
+layout(binding = 0) uniform Camera {
+    vec3 position;
+    mat4 view;
+    mat4 projection;
+} uCamera;
 
 void main() {
-    gl_Position = projection * view * vec4(aPos, 1.0);
+    gl_Position = uCamera.projection * uCamera.view * vec4(aPos, 1.0);
     vTexCoords = aTexCoords;
     vFragPos = aPos;
     vTBN = mat3(aTangent.xyz, cross(aTangent.xyz, aNormal) * aTangent.w, aNormal);

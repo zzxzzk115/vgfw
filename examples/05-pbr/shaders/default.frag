@@ -9,13 +9,11 @@ layout(location = 2) in mat3 vTBN;
 
 layout(location = 0) out vec4 FragColor;
 
-layout(binding = 0) uniform PrimitiveMaterial {
-    int baseColorTextureIndex;
-    int metallicRoughnessTextureIndex;
-    int normalTextureIndex;
-    int occlusionTextureIndex;
-    int emissiveTextureIndex;
-} uMaterial;
+layout(binding = 0) uniform Camera {
+    vec3 position;
+    mat4 view;
+    mat4 projection;
+} uCamera;
 
 layout(binding = 1) uniform DirectionalLight {
     vec3 direction;
@@ -23,14 +21,27 @@ layout(binding = 1) uniform DirectionalLight {
     vec3 color;
 } uLight;
 
-layout(binding = 2) uniform sampler2D pbrTextures[5];
+layout(binding = 2) uniform PrimitiveMaterial {
+    int baseColorTextureIndex;
+    int metallicRoughnessTextureIndex;
+    int normalTextureIndex;
+    int occlusionTextureIndex;
+    int emissiveTextureIndex;
+} uMaterial;
 
-layout(location = 2) uniform vec3 viewPos;
+layout(binding = 3) uniform sampler2D pbrTextures[5];
 
 void main() {
     vec3 baseColor;
+    float alpha = 1.0;
     if(uMaterial.baseColorTextureIndex != -1) {
-        baseColor = texture(pbrTextures[uMaterial.baseColorTextureIndex], vTexCoords).rgb;
+        vec4 color = texture(pbrTextures[uMaterial.baseColorTextureIndex], vTexCoords);
+        baseColor = color.rgb;
+        alpha = color.a;
+    }
+
+    if(alpha < 0.5) {
+        discard;
     }
 
     float metallic = 0.0;
@@ -70,7 +81,7 @@ void main() {
     vec3 diffuse = lightIntensity * diff * lightColor;
 
     // Specular (Cook-Torrance BRDF)
-    vec3 viewDir = normalize(viewPos - vFragPos);
+    vec3 viewDir = normalize(uCamera.position - vFragPos);
     vec3 halfwayDir = normalize(lightDir + viewDir);
 
     float NDF = DistributionGGX(normal, halfwayDir, roughness);
