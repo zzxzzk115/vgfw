@@ -42,7 +42,6 @@ rule("copy_assets")
     end)
 rule_end()
 
--- global rules
 rule("imguiconfig")
     set_extensions(".ini")
 

@@ -10,6 +10,22 @@
 
 #pragma once
 
+// #define VGFW_IMPLEMENTATION // Enable this for developing.
+
+#ifdef VGFW_IMPLEMENTATION
+#define TINYOBJLOADER_IMPLEMENTATION
+#define TINYGLTF_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+
+#include <algorithm>
+#include <iostream>
+#include <limits>
+#include <numeric>
+#include <sstream>
+#include <stdexcept>
+#endif
+
 // Currently, we only support Windows, Linux and macOS.
 
 #define VGFW_PLATFORM_DARWIN 0
@@ -53,20 +69,14 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 // clang-format on
 
-#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cstdint>
 #include <cstring>
 #include <filesystem>
-#include <iostream>
-#include <limits>
 #include <map>
 #include <memory>
-#include <numeric>
 #include <optional>
-#include <sstream>
-#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <variant>
@@ -94,12 +104,8 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
-#define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 
-#define TINYGLTF_IMPLEMENTATION
-#define STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_IMPLEMENTATION
 // #define TINYGLTF_NOEXCEPTION // optional. disable exception handling.
 #include <tiny_gltf.h>
 
@@ -898,7 +904,7 @@ namespace vgfw
             RenderContext& bindUniformBuffer(GLuint index, const UniformBuffer&);
             RenderContext& bindStorageBuffer(GLuint index, const StorageBuffer&);
             RenderContext& bindMeshPrimitiveMaterialBuffer(GLuint index, const resource::MeshPrimitive& meshPrimitive);
-            RenderContext& bindMeshPrimitiveTextures(GLuint                         index,
+            RenderContext& bindMeshPrimitiveTextures(GLuint                         startUnit,
                                                      const resource::MeshPrimitive& meshPrimitive,
                                                      std::optional<GLuint>          samplerId = {});
 
@@ -1084,8 +1090,8 @@ namespace vgfw
         };
 
         void init(const RendererInitInfo& initInfo);
-        void beginImGui();
-        void endImGui();
+        void beginFrame();
+        void endFrame();
         void present();
         void shutdown();
         bool isLoaded();
@@ -1161,7 +1167,7 @@ namespace vgfw
         private:
             friend class renderer::RenderContext;
             void bindMeshPrimitiveTextures(uint32_t                 primitiveIndex,
-                                           uint32_t                 unit,
+                                           uint32_t                 startUnit,
                                            renderer::RenderContext& rc,
                                            std::optional<GLuint>    samplerId = {}) const;
         };
@@ -1229,6 +1235,8 @@ namespace std
 } // namespace std
 
 // -------- implementation --------
+
+#ifdef VGFW_IMPLEMENTATION
 namespace vgfw
 {
     namespace utils
@@ -2456,12 +2464,12 @@ namespace vgfw
             return bindUniformBuffer(index, *meshPrimitive.materialBuffer);
         }
 
-        RenderContext& RenderContext::bindMeshPrimitiveTextures(GLuint                         index,
+        RenderContext& RenderContext::bindMeshPrimitiveTextures(GLuint                         startUnit,
                                                                 const resource::MeshPrimitive& meshPrimitive,
                                                                 std::optional<GLuint>          samplerId)
         {
             meshPrimitive.ownerModel->bindMeshPrimitiveTextures(
-                meshPrimitive.indexInOwnerModel, index, *this, samplerId);
+                meshPrimitive.indexInOwnerModel, startUnit, *this, samplerId);
             return *this;
         }
 
@@ -2955,6 +2963,7 @@ namespace vgfw
             {
                 const auto h    = std::hash<FrameGraphTexture::Desc> {}(desc);
                 auto&      pool = m_TexturePools[h];
+
                 if (pool.empty())
                 {
                     Texture texture;
@@ -3197,9 +3206,9 @@ namespace vgfw
             g_RendererInit = true;
         }
 
-        void beginImGui() { imgui::beginFrame(); }
+        void beginFrame() { imgui::beginFrame(); }
 
-        void endImGui() { imgui::endFrame(); }
+        void endFrame() { imgui::endFrame(); }
 
         void present() { g_GraphicsContext.swapBuffers(); }
 
@@ -3296,7 +3305,7 @@ namespace vgfw
         }
 
         void Model::bindMeshPrimitiveTextures(uint32_t                 primitiveIndex,
-                                              uint32_t                 unit,
+                                              uint32_t                 startUnit,
                                               renderer::RenderContext& rc,
                                               std::optional<GLuint>    samplerId) const
         {
@@ -3306,7 +3315,7 @@ namespace vgfw
 
             for (uint32_t i = 0; i < primitive.textureIndices.size(); ++i)
             {
-                rc.bindTexture(unit + i, *textures[primitive.textureIndices[i]], samplerId);
+                rc.bindTexture(startUnit + i, *textures[primitive.textureIndices[i]], samplerId);
             }
         }
     } // namespace resource
@@ -3807,3 +3816,4 @@ namespace vgfw
         log::shutdown();
     }
 } // namespace vgfw
+#endif

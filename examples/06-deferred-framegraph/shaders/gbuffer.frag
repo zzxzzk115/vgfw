@@ -1,27 +1,16 @@
 #version 450
 
-#include "lib/pbr.glsl"
-#include "lib/color.glsl"
-
 layout(location = 0) in vec2 vTexCoords;
 layout(location = 1) in vec3 vFragPos;
 layout(location = 2) in mat3 vTBN;
 
-layout(location = 0) out vec4 FragColor;
+layout(location = 0) out vec3 gPosition;
+layout(location = 1) out vec3 gNormal;
+layout(location = 2) out vec3 gAlbedo;
+layout(location = 3) out vec3 gEmissive;
+layout(location = 4) out vec3 gMetallicRoughnessAO;
 
-layout(binding = 0) uniform Camera {
-    vec3 position;
-    mat4 view;
-    mat4 projection;
-} uCamera;
-
-layout(binding = 1) uniform DirectionalLight {
-    vec3 direction;
-    float intensity;
-    vec3 color;
-} uLight;
-
-layout(binding = 2) uniform PrimitiveMaterial {
+layout(binding = 1) uniform PrimitiveMaterial {
     int baseColorTextureIndex;
     int metallicRoughnessTextureIndex;
     int normalTextureIndex;
@@ -69,35 +58,9 @@ void main() {
         emissive = texture(pbrTextures[uMaterial.emissiveTextureIndex], vTexCoords).rgb;
     }
 
-    float lightIntensity = uLight.intensity;
-    vec3 lightColor = uLight.color;
-    vec3 lightDir = -uLight.direction;
-
-    // Ambient
-    vec3 ambient = lightIntensity * lightColor * 0.02;
-
-    // Diffuse
-    float diff = max(dot(normal, lightDir), 0.0);
-    vec3 diffuse = lightIntensity * diff * lightColor;
-
-    // Specular (Cook-Torrance BRDF)
-    vec3 viewDir = normalize(uCamera.position - vFragPos);
-    vec3 halfwayDir = normalize(lightDir + viewDir);
-
-    float NDF = DistributionGGX(normal, halfwayDir, roughness);
-    float G = GeometrySmith(normal, viewDir, lightDir, roughness);
-    vec3 F0 = vec3(0.04); // default specular reflectance
-    vec3 F = FresnelSchlick(max(dot(halfwayDir, viewDir), 0.0), F0);
-    vec3 specular = (NDF * G * F) / (4.0 * max(dot(normal, viewDir), 0.0) * max(dot(normal, lightDir), 0.0));
-
-    // Combine ambient, diffuse, and specular components
-    vec3 result = (ambient + (1.0 - metallic) * diffuse + metallic * specular) * baseColor * ao + emissive;
-
-    // Tone-mapping
-    result = toneMapACES(result);
-
-    // Gamma correction
-    result = linearToGamma(result);
-
-    FragColor = vec4(result, 1.0);
+    gPosition = vFragPos;
+    gNormal = normal;
+    gAlbedo = baseColor;
+    gEmissive = emissive;
+    gMetallicRoughnessAO = vec3(metallic, roughness, ao);
 }

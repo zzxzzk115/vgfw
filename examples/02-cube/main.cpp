@@ -1,3 +1,4 @@
+#define VGFW_IMPLEMENTATION
 #include "vgfw.hpp"
 
 #include <chrono>
@@ -160,6 +161,8 @@ int main()
         glm::mat4 projection =
             glm::perspective(glm::radians(fov), window->getWidth() * 1.0f / window->getHeight(), 0.1f, 100.0f);
 
+        vgfw::renderer::beginFrame();
+
         // Render
         rc.beginRendering({.extent = {.width = window->getWidth(), .height = window->getHeight()}},
                           glm::vec4 {0.2f, 0.3f, 0.3f, 1.0f},
@@ -171,11 +174,11 @@ int main()
             .bindTexture(0, *texture)
             .draw(vertexBuffer, {}, 0, 36);
 
-        vgfw::renderer::beginImGui();
         ImGui::Begin("Cube");
         ImGui::SliderFloat("Camera FOV", &fov, 1.0f, 179.0f);
         ImGui::End();
-        vgfw::renderer::endImGui();
+
+        vgfw::renderer::endFrame();
 
         vgfw::renderer::present();
     }

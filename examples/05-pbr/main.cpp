@@ -1,3 +1,4 @@
+#define VGFW_IMPLEMENTATION
 #include "vgfw.hpp"
 
 #define GLM_ENABLE_EXPERIMENTAL
@@ -105,6 +106,8 @@ int main()
         uploadCamera(cameraBuffer, camera.data, rc);
         uploadLight(lightBuffer, light, rc);
 
+        vgfw::renderer::beginFrame();
+
         // Render
         rc.beginRendering({.extent = {.width = window->getWidth(), .height = window->getHeight()}},
                           glm::vec4 {0.2f, 0.3f, 0.3f, 1.0f},
@@ -134,16 +137,16 @@ int main()
                 .bindUniformBuffer(0, *cameraBuffer)
                 .bindUniformBuffer(1, *lightBuffer)
                 .bindMeshPrimitiveMaterialBuffer(2, meshPrimitive)
-                .bindMeshPrimitiveTextures(3, meshPrimitive, sampler)
+                .bindMeshPrimitiveTextures(0, meshPrimitive, sampler)
                 .drawMeshPrimitive(meshPrimitive);
         }
 
-        vgfw::renderer::beginImGui();
         ImGui::Begin("PBR");
         ImGui::SliderFloat("Camera FOV", &camera.fov, 1.0f, 179.0f);
         ImGui::Text("Press CAPSLOCK to toggle the camera (W/A/S/D/Q/E + Mouse)");
         ImGui::End();
-        vgfw::renderer::endImGui();
+
+        vgfw::renderer::endFrame();
 
         vgfw::renderer::present();
     }

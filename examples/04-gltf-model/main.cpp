@@ -1,3 +1,4 @@
+#define VGFW_IMPLEMENTATION
 #include "vgfw.hpp"
 
 #include <chrono>
@@ -49,7 +50,7 @@ layout(binding = 0) uniform PrimitiveMaterial {
     int emissiveTextureIndex;
 } uMaterial;
 
-layout(binding = 1) uniform sampler2D pbrTextures[5];
+layout(binding = 0) uniform sampler2D pbrTextures[5];
 
 // Cook-Torrance GGX (Trowbridge-Reitz) Distribution
 float DistributionGGX(vec3 N, vec3 H, float roughness)
@@ -207,6 +208,8 @@ int main()
         glm::mat4 projection =
             glm::perspective(glm::radians(fov), window->getWidth() * 1.0f / window->getHeight(), 0.1f, 100.0f);
 
+        vgfw::renderer::beginFrame();
+
         // Render
         rc.beginRendering({.extent = {.width = window->getWidth(), .height = window->getHeight()}},
                           glm::vec4 {0.2f, 0.3f, 0.3f, 1.0f},
@@ -221,10 +224,9 @@ int main()
             .setUniformVec3("objectColor", objectColor)
             .setUniform1f("lightIntensity", lightIntensity)
             .bindMeshPrimitiveMaterialBuffer(0, suzanneModel.meshPrimitives[0])
-            .bindMeshPrimitiveTextures(1, suzanneModel.meshPrimitives[0])
+            .bindMeshPrimitiveTextures(0, suzanneModel.meshPrimitives[0])
             .drawMeshPrimitive(suzanneModel.meshPrimitives[0]);
 
-        vgfw::renderer::beginImGui();
         ImGui::Begin("GLTF Model");
         ImGui::SliderFloat("Camera FOV", &fov, 1.0f, 179.0f);
         ImGui::DragFloat3("Camera Position", glm::value_ptr(viewPos));
@@ -233,7 +235,8 @@ int main()
         ImGui::ColorEdit3("Light Color", glm::value_ptr(lightColor));
         ImGui::ColorEdit3("Object Color", glm::value_ptr(objectColor));
         ImGui::End();
-        vgfw::renderer::endImGui();
+
+        vgfw::renderer::endFrame();
 
         vgfw::renderer::present();
     }
