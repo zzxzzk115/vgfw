@@ -66,6 +66,8 @@ int main()
     // Main loop
     while (!window->shouldClose())
     {
+        VGFW_PROFILE_NAMED_SCOPE("Main Loop");
+
         vgfw::time::TimePoint currentTime = vgfw::time::Clock::now();
         vgfw::time::Duration  deltaTime   = currentTime - lastTime;
         lastTime                          = currentTime;

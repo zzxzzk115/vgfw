@@ -83,6 +83,39 @@
 
 #include <glad/glad.h>
 
+#ifdef VGFW_ENABLE_TRACY
+#define TRACY_ENABLE
+#include <tracy/Tracy.hpp>
+
+#define VGFW_PROFILE_FUNCTION ZoneScoped;
+#define VGFW_PROFILE_NAMED_SCOPE(__VA_ARGS__) ZoneScopedN(__VA_ARGS__);
+#define VGFW_PROFILE_END_OF_FRAME FrameMark;
+
+#include <tracy/TracyOpenGL.hpp>
+
+#define VGFW_PROFILE_GL_INIT_CONTEXT TracyGpuContext;
+#define VGFW_PROFILE_GL(__VA_ARGS__) TracyGpuZone(__VA_ARGS__);
+#define VGFW_PROFILE_GL_COLLECT TracyGpuCollect;
+#else
+#define VGFW_PROFILE_FUNCTION
+#define VGFW_PROFILE_NAMED_SCOPE(__VA_ARGS__)
+#define VGFW_PROFILE_END_OF_FRAME
+
+#define VGFW_PROFILE_GL_INIT_CONTEXT
+#define VGFW_PROFILE_GL(__VA_ARGS__)
+#define VGFW_PROFILE_GL_COLLECT
+#endif
+
+#ifdef VGFW_ENABLE_GL_DEBUG
+#define NAMED_DEBUG_MARKER(name) \
+    const ::vgfw::renderer::DebugMarker dm##__LINE__ { name }
+#define DEBUG_MARKER() \
+    const ::vgfw::renderer::DebugMarker dm##__LINE__ { __FUNCTION__ }
+#else
+#define NAMED_DEBUG_MARKER(name)
+#define DEBUG_MARKER()
+#endif
+
 #include <GLFW/glfw3.h>
 #if VGFW_PLATFORM_LINUX
 #define GLFW_EXPOSE_NATIVE_X11
@@ -182,7 +215,6 @@ namespace vgfw
             uint32_t    height       = 768;
             bool        isResizable  = false;
             bool        isFullScreen = false;
-            bool        enableVSync  = false;
             AASample    aaSample     = AASample::e1;
         };
 
@@ -307,6 +339,13 @@ namespace vgfw
 
     namespace renderer
     {
+        class DebugMarker
+        {
+        public:
+            explicit DebugMarker(std::string_view name);
+            ~DebugMarker();
+        };
+
         class GraphicsContext
         {
         public:
@@ -1343,7 +1382,6 @@ namespace vgfw
             glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, VGFW_RENDER_API_OPENGL_MIN_MAJOR);
             glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, VGFW_RENDER_API_OPENGL_MIN_MINOR);
 
-            glfwSwapInterval(initInfo.enableVSync);
             glfwWindowHint(GLFW_SAMPLES, static_cast<int>(initInfo.aaSample));
             glfwWindowHint(GLFW_RESIZABLE, initInfo.isResizable);
 
@@ -1388,7 +1426,11 @@ namespace vgfw
             glfwTerminate();
         }
 
-        void GLFWWindow::onTick() { glfwPollEvents(); }
+        void GLFWWindow::onTick()
+        {
+            VGFW_PROFILE_FUNCTION
+            glfwPollEvents();
+        }
 
         bool GLFWWindow::shouldClose() const { return m_Window && glfwWindowShouldClose(m_Window); }
 
@@ -1418,6 +1460,8 @@ namespace vgfw
             {
                 glfwSwapBuffers(m_Window);
             }
+
+            VGFW_PROFILE_GL_COLLECT
         }
 
         void GLFWWindow::setHideCursor(bool hide)
@@ -1450,11 +1494,19 @@ namespace vgfw
 
     namespace renderer
     {
+        DebugMarker::DebugMarker(std::string_view name)
+        {
+            glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, name.data());
+        }
+        DebugMarker::~DebugMarker() { glPopDebugGroup(); }
+
         void GraphicsContext::init(const std::shared_ptr<window::Window>& window)
         {
             m_Window = window;
 
             window->makeCurrentContext();
+            setVSync(false);
+
             int version = loadGl();
 
             assert(version);
@@ -1476,6 +1528,8 @@ namespace vgfw
             }
 
             m_SupportDSA = GLAD_GL_VERSION_4_5 || GLAD_GL_VERSION_4_6;
+
+            VGFW_PROFILE_GL_INIT_CONTEXT
         }
 
         void GraphicsContext::shutdown() { m_Window->shutdown(); }
@@ -2483,6 +2537,7 @@ namespace vgfw
                                            uint32_t                              numVertices,
                                            uint32_t                              numInstances)
         {
+            VGFW_PROFILE_FUNCTION
             if (vertexBuffer.has_value())
                 setVertexBuffer(*vertexBuffer);
 
@@ -2501,6 +2556,7 @@ namespace vgfw
 
         RenderContext& RenderContext::drawMeshPrimitive(const resource::MeshPrimitive& meshPrimitive)
         {
+            VGFW_PROFILE_FUNCTION
             meshPrimitive.draw(*this);
             return *this;
         }
@@ -2954,6 +3010,7 @@ namespace vgfw
 
             void TransientResources::update(float dt)
             {
+                VGFW_PROFILE_FUNCTION
                 const auto deleter = [&](auto& object) { m_RenderContext.destroy(object); };
                 heartbeat(m_Textures, m_TexturePools, dt, deleter);
                 heartbeat(m_Buffers, m_BufferPools, dt, deleter);
@@ -3206,11 +3263,23 @@ namespace vgfw
             g_RendererInit = true;
         }
 
-        void beginFrame() { imgui::beginFrame(); }
+        void beginFrame()
+        {
+            VGFW_PROFILE_FUNCTION
+            imgui::beginFrame();
+        }
 
-        void endFrame() { imgui::endFrame(); }
+        void endFrame()
+        {
+            VGFW_PROFILE_FUNCTION
+            imgui::endFrame();
+        }
 
-        void present() { g_GraphicsContext.swapBuffers(); }
+        void present()
+        {
+            VGFW_PROFILE_FUNCTION
+            g_GraphicsContext.swapBuffers();
+        }
 
         void shutdown()
         {

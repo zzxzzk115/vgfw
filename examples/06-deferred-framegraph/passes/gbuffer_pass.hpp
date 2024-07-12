@@ -7,7 +7,7 @@ class GBufferPass : public BasePass
 {
 public:
     explicit GBufferPass(vgfw::renderer::RenderContext& rc);
-    ~GBufferPass() = default;
+    ~GBufferPass();
 
     void addToGraph(FrameGraph&                                       fg,
                     FrameGraphBlackboard&                             blackboard,

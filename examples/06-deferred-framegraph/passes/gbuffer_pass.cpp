@@ -4,6 +4,14 @@
 
 GBufferPass::GBufferPass(vgfw::renderer::RenderContext& rc) : BasePass(rc) {}
 
+GBufferPass::~GBufferPass()
+{
+    for (auto& [_, pipeline] : m_Pipelines)
+    {
+        m_RenderContext.destroy(pipeline);
+    }
+}
+
 void GBufferPass::addToGraph(FrameGraph&                                       fg,
                              FrameGraphBlackboard&                             blackboard,
                              const vgfw::renderer::Extent2D&                   resolution,
@@ -40,7 +48,11 @@ void GBufferPass::addToGraph(FrameGraph&                                       f
                 "Depth", {.extent = resolution, .format = vgfw::renderer::PixelFormat::eDepth32F});
             data.depth = builder.write(data.depth);
         },
-        [=, this](const GBufferData& data, FrameGraphPassResources& resources, void* ctx) {
+        [=, &meshPrimitives, this](const GBufferData& data, FrameGraphPassResources& resources, void* ctx) {
+            NAMED_DEBUG_MARKER("GBuffer Pass");
+            VGFW_PROFILE_GL("GBuffer Pass");
+            VGFW_PROFILE_NAMED_SCOPE("GBuffer Pass");
+
             auto& rc = *static_cast<vgfw::renderer::RenderContext*>(ctx);
 
             constexpr glm::vec4 kBlackColor {0.0f};

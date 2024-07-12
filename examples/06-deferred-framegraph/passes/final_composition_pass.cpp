@@ -62,6 +62,10 @@ void FinalCompositionPass::compose(FrameGraph& fg, FrameGraphBlackboard& blackbo
             builder.setSideEffect();
         },
         [=, this](const auto&, FrameGraphPassResources& resources, void* ctx) {
+            NAMED_DEBUG_MARKER("Final Composition Pass");
+            VGFW_PROFILE_GL("Final Composition Pass");
+            VGFW_PROFILE_NAMED_SCOPE("Final Composition Pass");
+
             const auto extent = resources.getDescriptor<vgfw::renderer::framegraph::FrameGraphTexture>(output).extent;
             auto&      rc     = *static_cast<vgfw::renderer::RenderContext*>(ctx);
 

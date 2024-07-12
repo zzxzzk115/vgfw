@@ -55,6 +55,10 @@ FrameGraphResource DeferredLightingPass::addToGraph(FrameGraph& fg, FrameGraphBl
             data.sceneColorHDR = builder.write(data.sceneColorHDR);
         },
         [=, this](const Data& data, FrameGraphPassResources& resources, void* ctx) {
+            NAMED_DEBUG_MARKER("Final Composition Pass");
+            VGFW_PROFILE_GL("Final Composition Pass");
+            VGFW_PROFILE_NAMED_SCOPE("Final Composition Pass");
+            
             auto& rc = *static_cast<vgfw::renderer::RenderContext*>(ctx);
 
             const vgfw::renderer::RenderingInfo renderingInfo {

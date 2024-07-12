@@ -93,6 +93,8 @@ int main()
     // Main loop
     while (!window->shouldClose())
     {
+        VGFW_PROFILE_NAMED_SCOPE("Main Loop");
+
         vgfw::time::TimePoint currentTime = vgfw::time::Clock::now();
         vgfw::time::Duration  deltaTime   = currentTime - lastTime;
         lastTime                          = currentTime;
@@ -108,37 +110,41 @@ int main()
 
         vgfw::renderer::beginFrame();
 
-        // Render
-        rc.beginRendering({.extent = {.width = window->getWidth(), .height = window->getHeight()}},
-                          glm::vec4 {0.2f, 0.3f, 0.3f, 1.0f},
-                          1.0f);
-
-        for (auto& meshPrimitive : sponza.meshPrimitives)
         {
-            auto vao = rc.getVertexArray(meshPrimitive.vertexFormat->getAttributes());
+            VGFW_PROFILE_NAMED_SCOPE("Rendering");
 
-            // Build a graphics pipeline
-            auto graphicsPipeline = vgfw::renderer::GraphicsPipeline::Builder {}
-                                        .setDepthStencil({
-                                            .depthTest      = true,
-                                            .depthWrite     = true,
-                                            .depthCompareOp = vgfw::renderer::CompareOp::eLess,
-                                        })
-                                        .setRasterizerState({
-                                            .polygonMode = vgfw::renderer::PolygonMode::eFill,
-                                            .cullMode    = vgfw::renderer::CullMode::eBack,
-                                            .scissorTest = false,
-                                        })
-                                        .setVAO(vao)
-                                        .setShaderProgram(program)
-                                        .build();
+            // Render
+            rc.beginRendering({.extent = {.width = window->getWidth(), .height = window->getHeight()}},
+                              glm::vec4 {0.2f, 0.3f, 0.3f, 1.0f},
+                              1.0f);
 
-            rc.bindGraphicsPipeline(graphicsPipeline)
-                .bindUniformBuffer(0, *cameraBuffer)
-                .bindUniformBuffer(1, *lightBuffer)
-                .bindMeshPrimitiveMaterialBuffer(2, meshPrimitive)
-                .bindMeshPrimitiveTextures(0, meshPrimitive, sampler)
-                .drawMeshPrimitive(meshPrimitive);
+            for (auto& meshPrimitive : sponza.meshPrimitives)
+            {
+                auto vao = rc.getVertexArray(meshPrimitive.vertexFormat->getAttributes());
+
+                // Build a graphics pipeline
+                auto graphicsPipeline = vgfw::renderer::GraphicsPipeline::Builder {}
+                                            .setDepthStencil({
+                                                .depthTest      = true,
+                                                .depthWrite     = true,
+                                                .depthCompareOp = vgfw::renderer::CompareOp::eLess,
+                                            })
+                                            .setRasterizerState({
+                                                .polygonMode = vgfw::renderer::PolygonMode::eFill,
+                                                .cullMode    = vgfw::renderer::CullMode::eBack,
+                                                .scissorTest = false,
+                                            })
+                                            .setVAO(vao)
+                                            .setShaderProgram(program)
+                                            .build();
+
+                rc.bindGraphicsPipeline(graphicsPipeline)
+                    .bindUniformBuffer(0, *cameraBuffer)
+                    .bindUniformBuffer(1, *lightBuffer)
+                    .bindMeshPrimitiveMaterialBuffer(2, meshPrimitive)
+                    .bindMeshPrimitiveTextures(0, meshPrimitive, sampler)
+                    .drawMeshPrimitive(meshPrimitive);
+            }
         }
 
         ImGui::Begin("PBR");
@@ -149,6 +155,8 @@ int main()
         vgfw::renderer::endFrame();
 
         vgfw::renderer::present();
+
+        VGFW_PROFILE_END_OF_FRAME
     }
 
     // Cleanup
