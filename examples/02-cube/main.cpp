@@ -135,7 +135,7 @@ int main()
     auto vertexBuffer = rc.createVertexBuffer(vertexFormat->getStride(), 36, vertices);
 
     // Load texture
-    auto* texture = vgfw::io::load("assets/textures/awesomeface.png", rc);
+    auto* texture = vgfw::io::loadTexture("assets/textures/awesomeface.png", rc);
 
     // Start time
     auto startTime = std::chrono::high_resolution_clock::now();

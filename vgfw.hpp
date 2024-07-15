@@ -2,7 +2,7 @@
  * @file vgfw.hpp
  * @author Kexuan Zhang (zzxzzk115@gmail.com)
  * @brief VGFW (V Graphics FrameWork) is a library designed for rapidly creating graphics prototypes.
- * @version 1.0.0
+ * @version 1.1.0
  *
  * @copyright Copyright (c) 2024
  *
@@ -19,6 +19,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 
 #include <algorithm>
+#include <array>
 #include <iostream>
 #include <limits>
 #include <numeric>
@@ -594,6 +595,13 @@ namespace vgfw
             eDepth32F = GL_DEPTH_COMPONENT32F
         };
 
+        enum class WrapMode
+        {
+            eClampToEdge = 0,
+            eClampToOpaqueBlack,
+            eClampToOpaqueWhite
+        };
+
         enum class TextureType : GLenum
         {
             eTexture2D = GL_TEXTURE_2D,
@@ -1032,13 +1040,6 @@ namespace vgfw
                 Buffer* handle = nullptr;
             };
 
-            enum class WrapMode
-            {
-                eClampToEdge = 0,
-                eClampToOpaqueBlack,
-                eClampToOpaqueWhite
-            };
-
             class FrameGraphTexture
             {
             public:
@@ -1108,6 +1109,23 @@ namespace vgfw
             FrameGraphResource importBuffer(FrameGraph& fg, const std::string& name, Buffer* buffer);
             Buffer&            getBuffer(FrameGraphPassResources& resources, FrameGraphResource id);
         } // namespace framegraph
+
+        namespace shadow
+        {
+            struct Cascade
+            {
+                float     splitDepth;
+                glm::mat4 viewProjection;
+            };
+
+            std::vector<Cascade> buildCascades(float            cameraNear,
+                                               float            cameraFar,
+                                               const glm::mat4& cameraViewProjection,
+                                               const glm::vec3& lightDirection,
+                                               uint32_t         numCascades,
+                                               float            lambda,
+                                               uint32_t         shadowMapSize);
+        }; // namespace shadow
 
         namespace imgui
         {
@@ -1186,6 +1204,7 @@ namespace vgfw
             std::vector<uint32_t>             textureIndices;
 
             math::AABB aabb {};
+            glm::mat4  modelMatrix {1.0};
 
             int              indexInOwnerModel {-1};
             resource::Model* ownerModel {nullptr};
@@ -1218,11 +1237,16 @@ namespace vgfw
         static std::unordered_map<size_t, renderer::Texture*> g_TextureCache;
 
         renderer::Texture*
-        load(const std::filesystem::path& texturePath, renderer::RenderContext& rc, bool flip = true);
+        loadTexture(const std::filesystem::path& texturePath, renderer::RenderContext& rc, bool flip = true);
 
-        void release(const std::filesystem::path& texturePath, renderer::Texture& texture, renderer::RenderContext& rc);
+        void releaseTexture(const std::filesystem::path& texturePath,
+                            renderer::Texture&           texture,
+                            renderer::RenderContext&     rc);
 
-        bool load(const std::filesystem::path& modelPath, resource::Model& model, renderer::RenderContext& rc);
+        bool loadModel(const std::filesystem::path& modelPath,
+                       resource::Model&             model,
+                       renderer::RenderContext&     rc,
+                       const glm::vec3&             scale = glm::vec3(1.0f));
     } // namespace io
 
     bool init();
@@ -3135,6 +3159,145 @@ namespace vgfw
             }
         } // namespace framegraph
 
+        namespace shadow
+        {
+            using Splits         = std::vector<float>;
+            using FrustumCorners = std::array<glm::vec3, 8>;
+
+            auto buildCascadeSplits(uint32_t numCascades, float lambda, float zNear, float clipRange)
+            {
+                constexpr auto kMinDistance = 0.0f, kMaxDistance = 1.0f;
+
+                const auto minZ = zNear + kMinDistance * clipRange;
+                const auto maxZ = zNear + kMaxDistance * clipRange;
+
+                const auto range = maxZ - minZ;
+                const auto ratio = maxZ / minZ;
+
+                Splits cascadeSplits(numCascades);
+
+                for (uint32_t i {0}; i < cascadeSplits.size(); ++i)
+                {
+                    const auto p       = static_cast<float>(i + 1) / cascadeSplits.size();
+                    const auto log     = minZ * std::pow(ratio, p);
+                    const auto uniform = minZ + range * p;
+                    const auto d       = lambda * (log - uniform) + uniform;
+                    cascadeSplits[i]   = (d - zNear) / clipRange;
+                }
+                return cascadeSplits;
+            }
+
+            auto buildFrustumCorners(const glm::mat4& inversedViewProj, float splitDist, float lastSplitDist)
+            {
+                // clang-format off
+                FrustumCorners frustumCorners{
+                    // Near
+	            	glm::vec3{-1.0f,  1.0f, -1.0f}, // TL
+	            	glm::vec3{ 1.0f,  1.0f, -1.0f}, // TR
+	            	glm::vec3{ 1.0f, -1.0f, -1.0f}, // BR
+	            	glm::vec3{-1.0f, -1.0f, -1.0f}, // BL
+	            	// Far
+                    glm::vec3{-1.0f,  1.0f,  1.0f}, // TL
+	            	glm::vec3{ 1.0f,  1.0f,  1.0f}, // TR
+	            	glm::vec3{ 1.0f, -1.0f,  1.0f}, // BR
+	            	glm::vec3{-1.0f, -1.0f,  1.0f}  // BL
+                };
+                // clang-format on
+
+                // Project frustum corners into world space
+                for (auto& p : frustumCorners)
+                {
+                    const auto temp = inversedViewProj * glm::vec4 {p, 1.0f};
+                    p               = glm::vec3 {temp} / temp.w;
+                }
+                for (uint32_t i {0}; i < 4; ++i)
+                {
+                    const auto cornerRay     = frustumCorners[i + 4] - frustumCorners[i];
+                    const auto nearCornerRay = cornerRay * lastSplitDist;
+                    const auto farCornerRay  = cornerRay * splitDist;
+                    frustumCorners[i + 4]    = frustumCorners[i] + farCornerRay;
+                    frustumCorners[i]        = frustumCorners[i] + nearCornerRay;
+                }
+                return frustumCorners;
+            }
+            auto measureFrustum(const FrustumCorners& frustumCorners)
+            {
+                glm::vec3 center {0.0f};
+                for (const auto& p : frustumCorners)
+                    center += p;
+                center /= frustumCorners.size();
+
+                auto radius = 0.0f;
+                for (const auto& p : frustumCorners)
+                {
+                    const auto distance = glm::length(p - center);
+                    radius              = glm::max(radius, distance);
+                }
+                radius = glm::ceil(radius * 16.0f) / 16.0f;
+                return std::make_tuple(center, radius);
+            }
+
+            void eliminateShimmering(glm::mat4& projection, const glm::mat4& view, uint32_t shadowMapSize)
+            {
+                auto shadowOrigin = projection * view * glm::vec4 {glm::vec3 {0.0f}, 1.0f};
+                shadowOrigin *= (static_cast<float>(shadowMapSize) / 2.0f);
+
+                const auto roundedOrigin = glm::round(shadowOrigin);
+                auto       roundOffset   = roundedOrigin - shadowOrigin;
+                roundOffset              = roundOffset * 2.0f / static_cast<float>(shadowMapSize);
+                roundOffset.z            = 0.0f;
+                roundOffset.w            = 0.0f;
+                projection[3] += roundOffset;
+            }
+
+            auto buildDirLightMatrix(const glm::mat4& inversedViewProj,
+                                     const glm::vec3& lightDirection,
+                                     uint32_t         shadowMapSize,
+                                     float            splitDist,
+                                     float            lastSplitDist)
+            {
+                const auto frustumCorners   = buildFrustumCorners(inversedViewProj, splitDist, lastSplitDist);
+                const auto [center, radius] = measureFrustum(frustumCorners);
+
+                const auto maxExtents = glm::vec3 {radius};
+                const auto minExtents = -maxExtents;
+
+                const auto eye        = center - glm::normalize(lightDirection) * -minExtents.z;
+                const auto view       = glm::lookAt(eye, center, {0.0f, 1.0f, 0.0f});
+                auto       projection = glm::ortho(
+                    minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f, (maxExtents - minExtents).z);
+                eliminateShimmering(projection, view, shadowMapSize);
+                return projection * view;
+            }
+
+            std::vector<Cascade> buildCascades(float            cameraNear,
+                                               float            cameraFar,
+                                               const glm::mat4& cameraViewProjection,
+                                               const glm::vec3& lightDirection,
+                                               uint32_t         numCascades,
+                                               float            lambda,
+                                               uint32_t         shadowMapSize)
+            {
+                const auto clipRange        = cameraFar - cameraNear;
+                const auto cascadeSplits    = buildCascadeSplits(numCascades, lambda, cameraNear, clipRange);
+                const auto inversedViewProj = glm::inverse(cameraViewProjection);
+
+                auto                 lastSplitDist = 0.0f;
+                std::vector<Cascade> cascades(numCascades);
+                for (uint32_t i {0}; i < cascades.size(); ++i)
+                {
+                    const auto splitDist = cascadeSplits[i];
+                    cascades[i]          = {
+                                 .splitDepth     = (cameraNear + splitDist * clipRange) * -1.0f,
+                                 .viewProjection = buildDirLightMatrix(
+                            inversedViewProj, lightDirection, shadowMapSize, splitDist, lastSplitDist),
+                    };
+                    lastSplitDist = splitDist;
+                }
+                return cascades;
+            }
+        }; // namespace shadow
+
         namespace imgui
         {
             void init(bool enableDocking)
@@ -3392,7 +3555,7 @@ namespace vgfw
 
     namespace io
     {
-        renderer::Texture* load(const std::filesystem::path& texturePath, renderer::RenderContext& rc, bool flip)
+        renderer::Texture* loadTexture(const std::filesystem::path& texturePath, renderer::RenderContext& rc, bool flip)
         {
             if (texturePath.empty())
             {
@@ -3473,7 +3636,9 @@ namespace vgfw
             return newTexture;
         }
 
-        void release(const std::filesystem::path& texturePath, renderer::Texture& texture, renderer::RenderContext& rc)
+        void releaseTexture(const std::filesystem::path& texturePath,
+                            renderer::Texture&           texture,
+                            renderer::RenderContext&     rc)
         {
             if (texturePath.empty())
             {
@@ -3489,7 +3654,10 @@ namespace vgfw
             }
         }
 
-        bool loadOBJ(const std::filesystem::path& modelPath, resource::Model& model, renderer::RenderContext& rc)
+        bool loadOBJ(const std::filesystem::path& modelPath,
+                     resource::Model&             model,
+                     renderer::RenderContext&     rc,
+                     const glm::vec3&             scale)
         {
             std::string              inputfile = modelPath.generic_string();
             tinyobj::ObjReaderConfig readerConfig;
@@ -3595,13 +3763,17 @@ namespace vgfw
 
                 meshPrimitive.ownerModel        = &model;
                 meshPrimitive.indexInOwnerModel = model.meshPrimitives.size() - 1;
+                meshPrimitive.modelMatrix       = glm::scale(glm::mat4(1.0), scale);
                 meshPrimitive.build(vertexFormatBuilder, rc);
             }
 
             return true;
         }
 
-        bool loadGLTF(const std::filesystem::path& modelPath, resource::Model& model, renderer::RenderContext& rc)
+        bool loadGLTF(const std::filesystem::path& modelPath,
+                      resource::Model&             model,
+                      renderer::RenderContext&     rc,
+                      const glm::vec3&             scale)
         {
             tinygltf::TinyGLTF loader;
             tinygltf::Model    gltfModel;
@@ -3646,9 +3818,10 @@ namespace vgfw
             model.textures.resize(gltfModel.textures.size());
             for (const auto& texture : gltfModel.textures)
             {
-                const auto&              image         = gltfModel.images[texture.source];
-                vgfw::renderer::Texture* loadedTexture = vgfw::io::load(modelPath.parent_path() / image.uri, rc, false);
-                model.textures[texture.source]         = loadedTexture;
+                const auto&              image = gltfModel.images[texture.source];
+                vgfw::renderer::Texture* loadedTexture =
+                    vgfw::io::loadTexture(modelPath.parent_path() / image.uri, rc, false);
+                model.textures[texture.source] = loadedTexture;
             }
 
             // Load materials
@@ -3846,6 +4019,7 @@ namespace vgfw
 
                     meshPrimitive.ownerModel        = &model;
                     meshPrimitive.indexInOwnerModel = model.meshPrimitives.size() - 1;
+                    meshPrimitive.modelMatrix       = glm::scale(glm::mat4(1.0), scale);
                     meshPrimitive.build(vertexFormatBuilder, rc);
                 }
             }
@@ -3853,16 +4027,19 @@ namespace vgfw
             return true;
         }
 
-        bool load(const std::filesystem::path& modelPath, resource::Model& model, renderer::RenderContext& rc)
+        bool loadModel(const std::filesystem::path& modelPath,
+                       resource::Model&             model,
+                       renderer::RenderContext&     rc,
+                       const glm::vec3&             scale)
         {
             const auto& ext = modelPath.extension();
             if (ext == ".obj")
             {
-                return loadOBJ(modelPath, model, rc);
+                return loadOBJ(modelPath, model, rc, scale);
             }
             else if (ext == ".gltf" || ext == ".glb")
             {
-                return loadGLTF(modelPath, model, rc);
+                return loadGLTF(modelPath, model, rc, scale);
             }
 
             return false;

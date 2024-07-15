@@ -149,7 +149,7 @@ int main()
 
     // Load model
     vgfw::resource::Model suzanneModel {};
-    if (!vgfw::io::load("assets/models/Suzanne/Suzanne.gltf", suzanneModel, rc))
+    if (!vgfw::io::loadModel("assets/models/Suzanne/Suzanne.gltf", suzanneModel, rc))
     {
         return -1;
     }

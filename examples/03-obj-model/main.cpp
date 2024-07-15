@@ -87,7 +87,7 @@ int main()
 
     // Load model
     vgfw::resource::Model spotModel {};
-    if (!vgfw::io::load("assets/models/spot/spot.obj", spotModel, rc))
+    if (!vgfw::io::loadModel("assets/models/spot/spot.obj", spotModel, rc))
     {
         return -1;
     }
@@ -115,7 +115,7 @@ int main()
                                 .build();
 
     // Load texture
-    auto* spotTexture = vgfw::io::load("assets/models/spot/spot_texture.png", rc);
+    auto* spotTexture = vgfw::io::loadTexture("assets/models/spot/spot_texture.png", rc);
 
     // Start time
     auto startTime = std::chrono::high_resolution_clock::now();

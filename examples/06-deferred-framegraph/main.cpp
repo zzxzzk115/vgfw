@@ -36,7 +36,7 @@ int main()
 
     // Load model
     vgfw::resource::Model sponza {};
-    if (!vgfw::io::load("assets/models/Sponza/glTF/Sponza.gltf", sponza, rc))
+    if (!vgfw::io::loadModel("assets/models/Sponza/glTF/Sponza.gltf", sponza, rc))
     {
         return -1;
     }
