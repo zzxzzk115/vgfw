@@ -26,15 +26,16 @@
 #include <stdexcept>
 #endif
 
-// Currently, we only support Windows, Linux and macOS.
+// Currently, we only support Windows & Linux (DSA is not available on macOS (GL 4.1))
 
 #define VGFW_PLATFORM_DARWIN 0
 #define VGFW_PLATFORM_LINUX 0
 #define VGFW_PLATFORM_WINDOWS 0
 
-#if defined(__APPLE__) && defined(__MACH__)
-#undef VGFW_PLATFORM_DARWIN
-#define VGFW_PLATFORM_DARWIN 1
+#if defined(__APPLE__) && defined(__MACH__) // TODO: Support non-DSA
+// #undef VGFW_PLATFORM_DARWIN
+// #define VGFW_PLATFORM_DARWIN 1
+#error "macOS is not supported in version 1.0.0"
 #elif defined(__linux__)
 #undef VGFW_PLATFORM_LINUX
 #define VGFW_PLATFORM_LINUX 1

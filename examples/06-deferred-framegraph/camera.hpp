@@ -1,3 +1,5 @@
+#pragma once
+
 #include "vgfw.hpp"
 
 struct Camera

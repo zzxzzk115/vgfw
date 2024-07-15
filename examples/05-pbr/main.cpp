@@ -55,7 +55,7 @@ int main()
     // Init renderer
     vgfw::renderer::init({.window = window});
 
-    // Get graphics & render context
+    // Get render context
     auto& rc = vgfw::renderer::getRenderContext();
 
     // Load model

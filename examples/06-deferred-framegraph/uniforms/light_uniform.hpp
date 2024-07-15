@@ -1,3 +1,5 @@
+#pragma once
+
 #include "light.hpp"
 
 #include <fg/Fwd.hpp>

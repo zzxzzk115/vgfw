@@ -1,3 +1,5 @@
+#pragma once
+
 #include "camera.hpp"
 
 #include <fg/Fwd.hpp>

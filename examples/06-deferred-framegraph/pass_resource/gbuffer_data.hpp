@@ -1,3 +1,5 @@
+#pragma once
+
 #include <fg/Fwd.hpp>
 
 struct GBufferData

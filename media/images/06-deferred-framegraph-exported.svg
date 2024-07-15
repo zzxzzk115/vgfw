@@ -1,0 +1,286 @@
+<?xml version="1.0" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="785pt" height="717pt" viewBox="0.00 0.00 785.00 717.00">
+<g id="graph0" class="graph" transform="translate(4,713) scale(1)" data-name="FrameGraph">
+
+<polygon fill="white" stroke="none" points="-4,4 -4,-713 781,-713 781,4 -4,4" style=""/>
+<g id="clust1" class="cluster" data-name="cluster_P0">
+
+</g>
+<g id="clust2" class="cluster" data-name="cluster_P1">
+
+</g>
+<g id="clust3" class="cluster" data-name="cluster_P2">
+
+</g>
+<g id="clust4" class="cluster" data-name="cluster_P3">
+
+</g>
+<g id="clust5" class="cluster" data-name="cluster_P4">
+
+</g>
+<!-- P0 -->
+<g id="node1" class="node" pointer-events="visible" data-name="P0">
+
+<path fill="orange" stroke="black" d="M395.16,-648.5C395.16,-648.5 510.84,-648.5 510.84,-648.5 516.84,-648.5 522.84,-654.5 522.84,-660.5 522.84,-660.5 522.84,-680.5 522.84,-680.5 522.84,-686.5 516.84,-692.5 510.84,-692.5 510.84,-692.5 395.16,-692.5 395.16,-692.5 389.16,-692.5 383.16,-686.5 383.16,-680.5 383.16,-680.5 383.16,-660.5 383.16,-660.5 383.16,-654.5 389.16,-648.5 395.16,-648.5" style=""/>
+<text text-anchor="start" x="397.16" y="-682.5" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00" style="">Upload CameraUniform</text>
+<polyline fill="none" stroke="black" points="383.16,-676.5 522.84,-676.5" style=""/>
+<text text-anchor="start" x="437" y="-665.5" font-family="Helvetica,sans-Serif" font-size="10.00" style="">Refs: 1</text>
+<text text-anchor="start" x="433.66" y="-653.5" font-family="Helvetica,sans-Serif" font-size="10.00" style=""> Index: 0</text>
+</g>
+<!-- R0_1 -->
+<g id="node2" class="node" pointer-events="visible" data-name="R0_1">
+
+<path fill="skyblue" stroke="black" d="M413.49,-567.5C413.49,-567.5 492.51,-567.5 492.51,-567.5 498.51,-567.5 504.51,-573.5 504.51,-579.5 504.51,-579.5 504.51,-599.5 504.51,-599.5 504.51,-605.5 498.51,-611.5 492.51,-611.5 492.51,-611.5 413.49,-611.5 413.49,-611.5 407.49,-611.5 401.49,-605.5 401.49,-599.5 401.49,-599.5 401.49,-579.5 401.49,-579.5 401.49,-573.5 407.49,-567.5 413.49,-567.5" style=""/>
+<text text-anchor="start" x="415.49" y="-601.5" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00" style="">CameraUniform</text>
+<polyline fill="none" stroke="black" points="401.49,-595.5 504.51,-595.5" style=""/>
+<text text-anchor="start" x="434.99" y="-584.5" font-family="Helvetica,sans-Serif" font-size="10.00" style="">Index: 0</text>
+<text text-anchor="start" x="435.55" y="-572.5" font-family="Helvetica,sans-Serif" font-size="10.00" style="">Refs : 2</text>
+</g>
+<!-- P0&#45;&gt;R0_1 -->
+<g id="edge1" class="edge" data-name="P0-&gt;R0_1">
+
+<path fill="none" stroke="orangered" d="M453,-648.74C453,-640.82 453,-631.59 453,-622.85" style=""/>
+<polygon fill="orangered" stroke="orangered" points="456.5,-622.91 453,-612.91 449.5,-622.91 456.5,-622.91" style=""/>
+</g>
+<!-- P2 -->
+<g id="node5" class="node" pointer-events="visible" data-name="P2">
+
+<path fill="orange" stroke="black" d="M267.32,-486.5C267.32,-486.5 334.68,-486.5 334.68,-486.5 340.68,-486.5 346.68,-492.5 346.68,-498.5 346.68,-498.5 346.68,-518.5 346.68,-518.5 346.68,-524.5 340.68,-530.5 334.68,-530.5 334.68,-530.5 267.32,-530.5 267.32,-530.5 261.32,-530.5 255.32,-524.5 255.32,-518.5 255.32,-518.5 255.32,-498.5 255.32,-498.5 255.32,-492.5 261.32,-486.5 267.32,-486.5" style=""/>
+<text text-anchor="start" x="269.32" y="-520.5" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00" style="">GBuffer Pass</text>
+<polyline fill="none" stroke="black" points="255.32,-514.5 346.68,-514.5" style=""/>
+<text text-anchor="start" x="284.66" y="-503.5" font-family="Helvetica,sans-Serif" font-size="10.00" style="">Refs: 5</text>
+<text text-anchor="start" x="281.32" y="-491.5" font-family="Helvetica,sans-Serif" font-size="10.00" style=""> Index: 2</text>
+</g>
+<!-- R0_1&#45;&gt;P2 -->
+<g id="edge11" class="edge" data-name="R0_1-&gt;P2">
+
+<path fill="none" stroke="yellowgreen" d="M412.67,-567.54C393.87,-557.77 371.3,-546.04 351.39,-535.69" style=""/>
+<polygon fill="yellowgreen" stroke="yellowgreen" points="353.09,-532.63 342.6,-531.12 349.86,-538.84 353.09,-532.63" style=""/>
+</g>
+<!-- P3 -->
+<g id="node12" class="node" pointer-events="visible" data-name="P3">
+
+<path fill="orange" stroke="black" d="M244.27,-324.5C244.27,-324.5 357.73,-324.5 357.73,-324.5 363.73,-324.5 369.73,-330.5 369.73,-336.5 369.73,-336.5 369.73,-356.5 369.73,-356.5 369.73,-362.5 363.73,-368.5 357.73,-368.5 357.73,-368.5 244.27,-368.5 244.27,-368.5 238.27,-368.5 232.27,-362.5 232.27,-356.5 232.27,-356.5 232.27,-336.5 232.27,-336.5 232.27,-330.5 238.27,-324.5 244.27,-324.5" style=""/>
+<text text-anchor="start" x="246.27" y="-358.5" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00" style="">Deferred Lighting Pass</text>
+<polyline fill="none" stroke="black" points="232.27,-352.5 369.73,-352.5" style=""/>
+<text text-anchor="start" x="285.11" y="-341.5" font-family="Helvetica,sans-Serif" font-size="10.00" style="">Refs: 1</text>
+<text text-anchor="start" x="281.77" y="-329.5" font-family="Helvetica,sans-Serif" font-size="10.00" style=""> Index: 3</text>
+</g>
+<!-- R0_1&#45;&gt;P3 -->
+<g id="edge12" class="edge" data-name="R0_1-&gt;P3">
+
+<path fill="none" stroke="yellowgreen" d="M504.42,-584.03C534.41,-578.48 569.98,-566.17 589,-539 625.2,-487.3 629.67,-445.26 589,-397 562.84,-365.96 456.84,-354.38 381.04,-350.07" style=""/>
+<polygon fill="yellowgreen" stroke="yellowgreen" points="381.31,-346.58 371.13,-349.54 380.93,-353.57 381.31,-346.58" style=""/>
+</g>
+<!-- P1 -->
+<g id="node3" class="node" pointer-events="visible" data-name="P1">
+
+<path fill="orange" stroke="black" d="M645.29,-486.5C645.29,-486.5 748.71,-486.5 748.71,-486.5 754.71,-486.5 760.71,-492.5 760.71,-498.5 760.71,-498.5 760.71,-518.5 760.71,-518.5 760.71,-524.5 754.71,-530.5 748.71,-530.5 748.71,-530.5 645.29,-530.5 645.29,-530.5 639.29,-530.5 633.29,-524.5 633.29,-518.5 633.29,-518.5 633.29,-498.5 633.29,-498.5 633.29,-492.5 639.29,-486.5 645.29,-486.5" style=""/>
+<text text-anchor="start" x="647.29" y="-520.5" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00" style="">Upload LightUniform</text>
+<polyline fill="none" stroke="black" points="633.29,-514.5 760.71,-514.5" style=""/>
+<text text-anchor="start" x="681.13" y="-503.5" font-family="Helvetica,sans-Serif" font-size="10.00" style="">Refs: 1</text>
+<text text-anchor="start" x="677.79" y="-491.5" font-family="Helvetica,sans-Serif" font-size="10.00" style=""> Index: 1</text>
+</g>
+<!-- R1_1 -->
+<g id="node4" class="node" pointer-events="visible" data-name="R1_1">
+
+<path fill="skyblue" stroke="black" d="M653.62,-405.5C653.62,-405.5 720.38,-405.5 720.38,-405.5 726.38,-405.5 732.38,-411.5 732.38,-417.5 732.38,-417.5 732.38,-437.5 732.38,-437.5 732.38,-443.5 726.38,-449.5 720.38,-449.5 720.38,-449.5 653.62,-449.5 653.62,-449.5 647.62,-449.5 641.62,-443.5 641.62,-437.5 641.62,-437.5 641.62,-417.5 641.62,-417.5 641.62,-411.5 647.62,-405.5 653.62,-405.5" style=""/>
+<text text-anchor="start" x="655.62" y="-439.5" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00" style="">LightUniform</text>
+<polyline fill="none" stroke="black" points="641.62,-433.5 732.38,-433.5" style=""/>
+<text text-anchor="start" x="669.12" y="-422.5" font-family="Helvetica,sans-Serif" font-size="10.00" style="">Index: 1</text>
+<text text-anchor="start" x="669.68" y="-410.5" font-family="Helvetica,sans-Serif" font-size="10.00" style="">Refs : 1</text>
+</g>
+<!-- P1&#45;&gt;R1_1 -->
+<g id="edge2" class="edge" data-name="P1-&gt;R1_1">
+
+<path fill="none" stroke="orangered" d="M694.37,-486.74C693.36,-478.73 692.18,-469.38 691.06,-460.55" style=""/>
+<polygon fill="orangered" stroke="orangered" points="694.56,-460.37 689.83,-450.89 687.62,-461.25 694.56,-460.37" style=""/>
+</g>
+<!-- R1_1&#45;&gt;P3 -->
+<g id="edge13" class="edge" data-name="R1_1-&gt;P3">
+
+<path fill="none" stroke="yellowgreen" d="M643.34,-405.63C635.37,-402.37 627.03,-399.33 619,-397 539.77,-374.06 446.16,-361.11 381.11,-354.27" style=""/>
+<polygon fill="yellowgreen" stroke="yellowgreen" points="381.52,-350.79 371.22,-353.25 380.81,-357.75 381.52,-350.79" style=""/>
+</g>
+<!-- R2_1 -->
+<g id="node6" class="node" pointer-events="visible" data-name="R2_1">
+
+<path fill="skyblue" stroke="black" d="M28.28,-405.5C28.28,-405.5 71.72,-405.5 71.72,-405.5 77.72,-405.5 83.72,-411.5 83.72,-417.5 83.72,-417.5 83.72,-437.5 83.72,-437.5 83.72,-443.5 77.72,-449.5 71.72,-449.5 71.72,-449.5 28.28,-449.5 28.28,-449.5 22.28,-449.5 16.28,-443.5 16.28,-437.5 16.28,-437.5 16.28,-417.5 16.28,-417.5 16.28,-411.5 22.28,-405.5 28.28,-405.5" style=""/>
+<text text-anchor="start" x="30.28" y="-439.5" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00" style="">Position</text>
+<polyline fill="none" stroke="black" points="16.28,-433.5 83.72,-433.5" style=""/>
+<text text-anchor="start" x="31.78" y="-422.5" font-family="Helvetica,sans-Serif" font-size="10.00" style="">Index: 2</text>
+<text text-anchor="start" x="32.34" y="-410.5" font-family="Helvetica,sans-Serif" font-size="10.00" style="">Refs : 1</text>
+</g>
+<!-- P2&#45;&gt;R2_1 -->
+<g id="edge3" class="edge" data-name="P2-&gt;R2_1">
+
+<path fill="none" stroke="orangered" d="M255.56,-497.63C215.2,-488.26 154.64,-472.77 94.04,-450.05" style=""/>
+<polygon fill="orangered" stroke="orangered" points="95.53,-446.87 84.94,-446.57 93.03,-453.41 95.53,-446.87" style=""/>
+</g>
+<!-- R3_1 -->
+<g id="node7" class="node" pointer-events="visible" data-name="R3_1">
+
+<path fill="skyblue" stroke="black" d="M114.21,-405.5C114.21,-405.5 153.79,-405.5 153.79,-405.5 159.79,-405.5 165.79,-411.5 165.79,-417.5 165.79,-417.5 165.79,-437.5 165.79,-437.5 165.79,-443.5 159.79,-449.5 153.79,-449.5 153.79,-449.5 114.21,-449.5 114.21,-449.5 108.21,-449.5 102.21,-443.5 102.21,-437.5 102.21,-437.5 102.21,-417.5 102.21,-417.5 102.21,-411.5 108.21,-405.5 114.21,-405.5" style=""/>
+<text text-anchor="start" x="116.71" y="-439.5" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00" style="">Normal</text>
+<polyline fill="none" stroke="black" points="102.21,-433.5 165.79,-433.5" style=""/>
+<text text-anchor="start" x="116.21" y="-422.5" font-family="Helvetica,sans-Serif" font-size="10.00" style="">Index: 3</text>
+<text text-anchor="start" x="116.77" y="-410.5" font-family="Helvetica,sans-Serif" font-size="10.00" style="">Refs : 1</text>
+</g>
+<!-- P2&#45;&gt;R3_1 -->
+<g id="edge4" class="edge" data-name="P2-&gt;R3_1">
+
+<path fill="none" stroke="orangered" d="M255.52,-487.47C233.79,-477.74 207.25,-465.61 176.01,-450.39" style=""/>
+<polygon fill="orangered" stroke="orangered" points="177.58,-447.26 167.06,-446.01 174.5,-453.55 177.58,-447.26" style=""/>
+</g>
+<!-- R4_1 -->
+<g id="node8" class="node" pointer-events="visible" data-name="R4_1">
+
+<path fill="skyblue" stroke="black" d="M196.21,-405.5C196.21,-405.5 235.79,-405.5 235.79,-405.5 241.79,-405.5 247.79,-411.5 247.79,-417.5 247.79,-417.5 247.79,-437.5 247.79,-437.5 247.79,-443.5 241.79,-449.5 235.79,-449.5 235.79,-449.5 196.21,-449.5 196.21,-449.5 190.21,-449.5 184.21,-443.5 184.21,-437.5 184.21,-437.5 184.21,-417.5 184.21,-417.5 184.21,-411.5 190.21,-405.5 196.21,-405.5" style=""/>
+<text text-anchor="start" x="198.71" y="-439.5" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00" style="">Albedo</text>
+<polyline fill="none" stroke="black" points="184.21,-433.5 247.79,-433.5" style=""/>
+<text text-anchor="start" x="198.21" y="-422.5" font-family="Helvetica,sans-Serif" font-size="10.00" style="">Index: 4</text>
+<text text-anchor="start" x="198.77" y="-410.5" font-family="Helvetica,sans-Serif" font-size="10.00" style="">Refs : 1</text>
+</g>
+<!-- P2&#45;&gt;R4_1 -->
+<g id="edge5" class="edge" data-name="P2-&gt;R4_1">
+
+<path fill="none" stroke="orangered" d="M278.67,-486.74C268.89,-477.65 257.25,-466.84 246.68,-457.01" style=""/>
+<polygon fill="orangered" stroke="orangered" points="249.29,-454.67 239.59,-450.42 244.53,-459.79 249.29,-454.67" style=""/>
+</g>
+<!-- R5_1 -->
+<g id="node9" class="node" pointer-events="visible" data-name="R5_1">
+
+<path fill="skyblue" stroke="black" d="M277.32,-405.5C277.32,-405.5 324.68,-405.5 324.68,-405.5 330.68,-405.5 336.68,-411.5 336.68,-417.5 336.68,-417.5 336.68,-437.5 336.68,-437.5 336.68,-443.5 330.68,-449.5 324.68,-449.5 324.68,-449.5 277.32,-449.5 277.32,-449.5 271.32,-449.5 265.32,-443.5 265.32,-437.5 265.32,-437.5 265.32,-417.5 265.32,-417.5 265.32,-411.5 271.32,-405.5 277.32,-405.5" style=""/>
+<text text-anchor="start" x="279.32" y="-439.5" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00" style="">Emissive</text>
+<polyline fill="none" stroke="black" points="265.32,-433.5 336.68,-433.5" style=""/>
+<text text-anchor="start" x="282.82" y="-422.5" font-family="Helvetica,sans-Serif" font-size="10.00" style="">Index: 5</text>
+<text text-anchor="start" x="283.38" y="-410.5" font-family="Helvetica,sans-Serif" font-size="10.00" style="">Refs : 1</text>
+</g>
+<!-- P2&#45;&gt;R5_1 -->
+<g id="edge6" class="edge" data-name="P2-&gt;R5_1">
+
+<path fill="none" stroke="orangered" d="M301,-486.74C301,-478.82 301,-469.59 301,-460.85" style=""/>
+<polygon fill="orangered" stroke="orangered" points="304.5,-460.91 301,-450.91 297.5,-460.91 304.5,-460.91" style=""/>
+</g>
+<!-- R6_1 -->
+<g id="node10" class="node" pointer-events="visible" data-name="R6_1">
+
+<path fill="skyblue" stroke="black" d="M367.16,-405.5C367.16,-405.5 482.84,-405.5 482.84,-405.5 488.84,-405.5 494.84,-411.5 494.84,-417.5 494.84,-417.5 494.84,-437.5 494.84,-437.5 494.84,-443.5 488.84,-449.5 482.84,-449.5 482.84,-449.5 367.16,-449.5 367.16,-449.5 361.16,-449.5 355.16,-443.5 355.16,-437.5 355.16,-437.5 355.16,-417.5 355.16,-417.5 355.16,-411.5 361.16,-405.5 367.16,-405.5" style=""/>
+<text text-anchor="start" x="369.16" y="-439.5" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00" style="">Metallic Roughness AO</text>
+<polyline fill="none" stroke="black" points="355.16,-433.5 494.84,-433.5" style=""/>
+<text text-anchor="start" x="407.16" y="-422.5" font-family="Helvetica,sans-Serif" font-size="10.00" style="">Index: 6</text>
+<text text-anchor="start" x="407.72" y="-410.5" font-family="Helvetica,sans-Serif" font-size="10.00" style="">Refs : 1</text>
+</g>
+<!-- P2&#45;&gt;R6_1 -->
+<g id="edge7" class="edge" data-name="P2-&gt;R6_1">
+
+<path fill="none" stroke="orangered" d="M333.9,-486.54C348.88,-477 366.78,-465.59 382.73,-455.43" style=""/>
+<polygon fill="orangered" stroke="orangered" points="384.54,-458.43 391.1,-450.1 380.78,-452.52 384.54,-458.43" style=""/>
+</g>
+<!-- R7_1 -->
+<g id="node11" class="node" pointer-events="visible" data-name="R7_1">
+
+<path fill="skyblue" stroke="black" d="M525.21,-405.5C525.21,-405.5 564.79,-405.5 564.79,-405.5 570.79,-405.5 576.79,-411.5 576.79,-417.5 576.79,-417.5 576.79,-437.5 576.79,-437.5 576.79,-443.5 570.79,-449.5 564.79,-449.5 564.79,-449.5 525.21,-449.5 525.21,-449.5 519.21,-449.5 513.21,-443.5 513.21,-437.5 513.21,-437.5 513.21,-417.5 513.21,-417.5 513.21,-411.5 519.21,-405.5 525.21,-405.5" style=""/>
+<text text-anchor="start" x="530.71" y="-439.5" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00" style="">Depth</text>
+<polyline fill="none" stroke="black" points="513.21,-433.5 576.79,-433.5" style=""/>
+<text text-anchor="start" x="527.21" y="-422.5" font-family="Helvetica,sans-Serif" font-size="10.00" style="">Index: 7</text>
+<text text-anchor="start" x="527.77" y="-410.5" font-family="Helvetica,sans-Serif" font-size="10.00" style="">Refs : 0</text>
+</g>
+<!-- P2&#45;&gt;R7_1 -->
+<g id="edge8" class="edge" data-name="P2-&gt;R7_1">
+
+<path fill="none" stroke="orangered" d="M346.64,-497.44C386.01,-488.13 444.36,-472.82 502.97,-450.02" style=""/>
+<polygon fill="orangered" stroke="orangered" points="504.11,-453.33 512.12,-446.39 501.53,-446.83 504.11,-453.33" style=""/>
+</g>
+<!-- R2_1&#45;&gt;P3 -->
+<g id="edge14" class="edge" data-name="R2_1-&gt;P3">
+
+<path fill="none" stroke="yellowgreen" d="M77.34,-405.57C82.37,-402.37 87.7,-399.35 93,-397 133.54,-379.02 181.55,-367.04 221.23,-359.37" style=""/>
+<polygon fill="yellowgreen" stroke="yellowgreen" points="221.77,-362.83 230.96,-357.56 220.49,-355.95 221.77,-362.83" style=""/>
+</g>
+<!-- R3_1&#45;&gt;P3 -->
+<g id="edge15" class="edge" data-name="R3_1-&gt;P3">
+
+<path fill="none" stroke="yellowgreen" d="M161.17,-405.53C165.67,-402.48 170.38,-399.52 175,-397 191.66,-387.92 210.33,-379.65 228.1,-372.57" style=""/>
+<polygon fill="yellowgreen" stroke="yellowgreen" points="229.27,-375.88 237.32,-368.99 226.73,-369.35 229.27,-375.88" style=""/>
+</g>
+<!-- R4_1&#45;&gt;P3 -->
+<g id="edge16" class="edge" data-name="R4_1-&gt;P3">
+
+<path fill="none" stroke="yellowgreen" d="M238.33,-405.74C248.11,-396.65 259.75,-385.84 270.32,-376.01" style=""/>
+<polygon fill="yellowgreen" stroke="yellowgreen" points="272.47,-378.79 277.41,-369.42 267.71,-373.67 272.47,-378.79" style=""/>
+</g>
+<!-- R5_1&#45;&gt;P3 -->
+<g id="edge17" class="edge" data-name="R5_1-&gt;P3">
+
+<path fill="none" stroke="yellowgreen" d="M301,-405.74C301,-397.82 301,-388.59 301,-379.85" style=""/>
+<polygon fill="yellowgreen" stroke="yellowgreen" points="304.5,-379.91 301,-369.91 297.5,-379.91 304.5,-379.91" style=""/>
+</g>
+<!-- R6_1&#45;&gt;P3 -->
+<g id="edge18" class="edge" data-name="R6_1-&gt;P3">
+
+<path fill="none" stroke="yellowgreen" d="M392.1,-405.54C377.12,-396 359.22,-384.59 343.27,-374.43" style=""/>
+<polygon fill="yellowgreen" stroke="yellowgreen" points="345.22,-371.52 334.9,-369.1 341.46,-377.43 345.22,-371.52" style=""/>
+</g>
+<!-- R8_1 -->
+<g id="node13" class="node" pointer-events="visible" data-name="R8_1">
+
+<path fill="skyblue" stroke="black" d="M260.38,-243.5C260.38,-243.5 341.62,-243.5 341.62,-243.5 347.62,-243.5 353.62,-249.5 353.62,-255.5 353.62,-255.5 353.62,-275.5 353.62,-275.5 353.62,-281.5 347.62,-287.5 341.62,-287.5 341.62,-287.5 260.38,-287.5 260.38,-287.5 254.38,-287.5 248.38,-281.5 248.38,-275.5 248.38,-275.5 248.38,-255.5 248.38,-255.5 248.38,-249.5 254.38,-243.5 260.38,-243.5" style=""/>
+<text text-anchor="start" x="262.38" y="-277.5" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00" style="">SceneColorHDR</text>
+<polyline fill="none" stroke="black" points="248.38,-271.5 353.62,-271.5" style=""/>
+<text text-anchor="start" x="282.88" y="-260.5" font-family="Helvetica,sans-Serif" font-size="10.00" style="">Index: 8</text>
+<text text-anchor="start" x="283.44" y="-248.5" font-family="Helvetica,sans-Serif" font-size="10.00" style="">Refs : 1</text>
+</g>
+<!-- P3&#45;&gt;R8_1 -->
+<g id="edge9" class="edge" data-name="P3-&gt;R8_1">
+
+<path fill="none" stroke="orangered" d="M301,-324.74C301,-316.82 301,-307.59 301,-298.85" style=""/>
+<polygon fill="orangered" stroke="orangered" points="304.5,-298.91 301,-288.91 297.5,-298.91 304.5,-298.91" style=""/>
+</g>
+<!-- P4 -->
+<g id="node14" class="node" pointer-events="visible" data-name="P4">
+
+<path fill="orange" stroke="black" d="M251.49,-162.5C251.49,-162.5 350.51,-162.5 350.51,-162.5 356.51,-162.5 362.51,-168.5 362.51,-174.5 362.51,-174.5 362.51,-194.5 362.51,-194.5 362.51,-200.5 356.51,-206.5 350.51,-206.5 350.51,-206.5 251.49,-206.5 251.49,-206.5 245.49,-206.5 239.49,-200.5 239.49,-194.5 239.49,-194.5 239.49,-174.5 239.49,-174.5 239.49,-168.5 245.49,-162.5 251.49,-162.5" style=""/>
+<text text-anchor="start" x="253.49" y="-196.5" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00" style="">Tone-mapping Pass</text>
+<polyline fill="none" stroke="black" points="239.49,-190.5 362.51,-190.5" style=""/>
+<text text-anchor="start" x="284.83" y="-179.5" font-family="Helvetica,sans-Serif" font-size="10.00" style="">Refs: 1</text>
+<text text-anchor="start" x="281.49" y="-167.5" font-family="Helvetica,sans-Serif" font-size="10.00" style=""> Index: 4</text>
+</g>
+<!-- R8_1&#45;&gt;P4 -->
+<g id="edge19" class="edge" data-name="R8_1-&gt;P4">
+
+<path fill="none" stroke="yellowgreen" d="M301,-243.74C301,-235.82 301,-226.59 301,-217.85" style=""/>
+<polygon fill="yellowgreen" stroke="yellowgreen" points="304.5,-217.91 301,-207.91 297.5,-217.91 304.5,-217.91" style=""/>
+</g>
+<!-- R9_1 -->
+<g id="node15" class="node" pointer-events="visible" data-name="R9_1">
+
+<path fill="skyblue" stroke="black" d="M237.05,-81.5C237.05,-81.5 364.95,-81.5 364.95,-81.5 370.95,-81.5 376.95,-87.5 376.95,-93.5 376.95,-93.5 376.95,-113.5 376.95,-113.5 376.95,-119.5 370.95,-125.5 364.95,-125.5 364.95,-125.5 237.05,-125.5 237.05,-125.5 231.05,-125.5 225.05,-119.5 225.05,-113.5 225.05,-113.5 225.05,-93.5 225.05,-93.5 225.05,-87.5 231.05,-81.5 237.05,-81.5" style=""/>
+<text text-anchor="start" x="239.05" y="-115.5" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00" style="">Tone-mapped SceneColor</text>
+<polyline fill="none" stroke="black" points="225.05,-109.5 376.95,-109.5" style=""/>
+<text text-anchor="start" x="283.05" y="-98.5" font-family="Helvetica,sans-Serif" font-size="10.00" style="">Index: 9</text>
+<text text-anchor="start" x="283.61" y="-86.5" font-family="Helvetica,sans-Serif" font-size="10.00" style="">Refs : 1</text>
+</g>
+<!-- P4&#45;&gt;R9_1 -->
+<g id="edge10" class="edge" data-name="P4-&gt;R9_1">
+
+<path fill="none" stroke="orangered" d="M301,-162.74C301,-154.82 301,-145.59 301,-136.85" style=""/>
+<polygon fill="orangered" stroke="orangered" points="304.5,-136.91 301,-126.91 297.5,-136.91 304.5,-136.91" style=""/>
+</g>
+<!-- P5 -->
+<g id="node16" class="node" pointer-events="visible" data-name="P5">
+
+<path fill="orange" stroke="black" d="M242.33,-0.5C242.33,-0.5 359.67,-0.5 359.67,-0.5 365.67,-0.5 371.67,-6.5 371.67,-12.5 371.67,-12.5 371.67,-32.5 371.67,-32.5 371.67,-38.5 365.67,-44.5 359.67,-44.5 359.67,-44.5 242.33,-44.5 242.33,-44.5 236.33,-44.5 230.33,-38.5 230.33,-32.5 230.33,-32.5 230.33,-12.5 230.33,-12.5 230.33,-6.5 236.33,-0.5 242.33,-0.5" style=""/>
+<text text-anchor="start" x="244.33" y="-34.5" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00" style="">Final Composition Pass</text>
+<polyline fill="none" stroke="black" points="230.33,-28.5 371.67,-28.5" style=""/>
+<text text-anchor="start" x="279.33" y="-17.5" font-family="Helvetica,sans-Serif" font-size="10.00" style="">★ Refs: 0</text>
+<text text-anchor="start" x="281.54" y="-5.5" font-family="Helvetica,sans-Serif" font-size="10.00" style=""> Index: 5</text>
+</g>
+<!-- R9_1&#45;&gt;P5 -->
+<g id="edge20" class="edge" data-name="R9_1-&gt;P5">
+
+<path fill="none" stroke="yellowgreen" d="M301,-81.74C301,-73.82 301,-64.59 301,-55.85" style=""/>
+<polygon fill="yellowgreen" stroke="yellowgreen" points="304.5,-55.91 301,-45.91 297.5,-55.91 304.5,-55.91" style=""/>
+</g>
+</g>
+</svg>
