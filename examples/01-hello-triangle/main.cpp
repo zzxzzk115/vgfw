@@ -106,7 +106,7 @@ int main()
         // Render
         rc.beginRendering({.extent = {.width = window->getWidth(), .height = window->getHeight()}},
                           glm::vec4 {0.2f, 0.3f, 0.3f, 1.0f});
-        rc.bindGraphicsPipeline(graphicsPipeline).draw(vertexBuffer, indexBuffer, 3, 3);
+        rc.bindGraphicsPipeline(graphicsPipeline).draw(vertexBuffer, indexBuffer, {.numVertices = 3, .numIndices = 3});
 
         ImGui::Begin("Triangle");
         ImGui::Text("Hello, VGFW Triangle!");
