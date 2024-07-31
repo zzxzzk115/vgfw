@@ -20,4 +20,6 @@ jobs:
 
       - name: Build
         shell: pwsh
-        run: xmake -vD -y
+        run: |
+          xmake repo -u -y
+          xmake -vD -y

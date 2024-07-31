@@ -188,7 +188,8 @@ namespace vgfw
             auto operator<=>(const AABB&) const = delete;
         };
 
-        inline constexpr bool isPowerOf2(uint32_t v) { return v && !(v & (v - 1)); }
+        inline constexpr bool  isPowerOf2(uint32_t v) { return v && !(v & (v - 1)); }
+        inline constexpr float max3(const glm::vec3& v) { return glm::max(glm::max(v.x, v.y), v.z); }
     } // namespace math
 
     namespace log
@@ -876,6 +877,17 @@ namespace vgfw
             ePatchList = GL_PATCHES
         };
 
+        struct GeometryInfo
+        {
+            PrimitiveTopology topology {PrimitiveTopology::eTriangleList};
+            uint32_t          vertexOffset {0};
+            uint32_t          numVertices {0};
+            uint32_t          indexOffset {0};
+            uint32_t          numIndices {0};
+
+            auto operator<=>(const GeometryInfo&) const = default;
+        };
+
         class RenderContext
         {
         public:
@@ -960,8 +972,7 @@ namespace vgfw
             RenderContext& drawCube();
             RenderContext& draw(OptionalReference<const VertexBuffer> vertexBuffer,
                                 OptionalReference<const IndexBuffer>  indexBuffer,
-                                uint32_t                              numIndices,
-                                uint32_t                              numVertices,
+                                const GeometryInfo&                   geometryInfo,
                                 uint32_t                              numInstances = 1);
             RenderContext& drawMeshPrimitive(const resource::MeshPrimitive& meshPrimitive);
 
@@ -1052,7 +1063,7 @@ namespace vgfw
                     PixelFormat format {PixelFormat::eUnknown};
 
                     bool        shadowSampler {false};
-                    WrapMode    wrap {WrapMode::eClampToEdge};
+                    WrapMode    wrapMode {WrapMode::eClampToEdge};
                     TexelFilter filter {TexelFilter::eLinear};
                 };
 
@@ -1209,7 +1220,7 @@ namespace vgfw
             int              indexInOwnerModel {-1};
             resource::Model* ownerModel {nullptr};
 
-            void build(renderer::VertexFormat::Builder& vertexFormatBuilder, renderer::RenderContext& rc);
+            void build(renderer::VertexFormat::Builder& vertexFormatBuilder, const glm::vec3& scale, renderer::RenderContext& rc);
 
         private:
             friend class renderer::RenderContext;
@@ -1222,6 +1233,8 @@ namespace vgfw
 
             std::vector<vgfw::renderer::Texture*> textures;
             std::vector<Material>                 materials;
+
+            math::AABB aabb;
 
         private:
             friend class renderer::RenderContext;
@@ -1281,7 +1294,7 @@ namespace std
                                      desc.layers,
                                      desc.format,
                                      desc.shadowSampler,
-                                     desc.wrap,
+                                     desc.wrapMode,
                                      desc.filter);
             return h;
         }
@@ -2552,29 +2565,57 @@ namespace vgfw
             return *this;
         }
 
-        RenderContext& RenderContext::drawFullScreenTriangle() { return draw({}, {}, 0, 3); }
+        RenderContext& RenderContext::drawFullScreenTriangle()
+        {
+            return draw({},
+                        {},
+                        {
+                            .topology    = PrimitiveTopology::eTriangleList,
+                            .numVertices = 3,
+                        });
+        }
 
-        RenderContext& RenderContext::drawCube() { return draw({}, {}, 0, 36); }
+        RenderContext& RenderContext::drawCube()
+        {
+            return draw({},
+                        {},
+                        {
+                            .topology    = PrimitiveTopology::eTriangleList,
+                            .numVertices = 36,
+                        });
+        }
 
         RenderContext& RenderContext::draw(OptionalReference<const VertexBuffer> vertexBuffer,
                                            OptionalReference<const IndexBuffer>  indexBuffer,
-                                           uint32_t                              numIndices,
-                                           uint32_t                              numVertices,
+                                           const GeometryInfo&                   geometryInfo,
                                            uint32_t                              numInstances)
         {
             VGFW_PROFILE_FUNCTION
             if (vertexBuffer.has_value())
                 setVertexBuffer(*vertexBuffer);
 
-            if (numIndices > 0)
+            if (geometryInfo.numIndices > 0)
             {
                 assert(indexBuffer.has_value());
                 setIndexBuffer(*indexBuffer);
-                glDrawElementsInstanced(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT, nullptr, numInstances);
+
+                const auto stride = static_cast<GLsizei>(indexBuffer->get().getIndexType());
+                const auto indices =
+                    reinterpret_cast<const void*>(static_cast<uint64_t>(stride) * geometryInfo.indexOffset);
+
+                glDrawElementsInstancedBaseVertex(static_cast<GLenum>(geometryInfo.topology),
+                                                  geometryInfo.numIndices,
+                                                  getIndexDataType(stride),
+                                                  indices,
+                                                  numInstances,
+                                                  geometryInfo.vertexOffset);
             }
             else
             {
-                glDrawArraysInstanced(GL_TRIANGLES, 0, numVertices, numInstances);
+                glDrawArraysInstanced(static_cast<GLenum>(geometryInfo.topology),
+                                      geometryInfo.vertexOffset,
+                                      geometryInfo.numVertices,
+                                      numInstances);
             }
             return *this;
         }
@@ -3061,7 +3102,7 @@ namespace vgfw
 
                     glm::vec4 borderColor {0.0f};
                     auto      addressMode = SamplerAddressMode::eClampToEdge;
-                    switch (desc.wrap)
+                    switch (desc.wrapMode)
                     {
                         case WrapMode::eClampToEdge:
                             addressMode = SamplerAddressMode::eClampToEdge;
@@ -3459,7 +3500,7 @@ namespace vgfw
 
     namespace resource
     {
-        void MeshPrimitive::build(renderer::VertexFormat::Builder& vertexFormatBuilder, renderer::RenderContext& rc)
+        void MeshPrimitive::build(renderer::VertexFormat::Builder& vertexFormatBuilder, const glm::vec3& scale, renderer::RenderContext& rc)
         {
             vertexFormat = vertexFormatBuilder.build();
             indexCount   = indices.size();
@@ -3475,6 +3516,9 @@ namespace vgfw
 
             for (uint32_t v = 0; v < vertexCount; ++v)
             {
+                // apply scale factor
+                record.positions[v] *= scale;
+
                 // clang-format off
                 // update AABB
                 if (record.positions[v].x < aabb.min.x) aabb.min.x = record.positions[v].x;
@@ -3516,6 +3560,9 @@ namespace vgfw
                 }
             }
 
+            assert(ownerModel);
+            ownerModel->aabb.merge(aabb);
+
             // Load index buffer & vertex buffer
             auto indexBuf  = rc.createIndexBuffer(renderer::IndexType::eUInt32, indices.size(), indices.data());
             auto vertexBuf = rc.createVertexBuffer(vertexFormat->getStride(), vertexCount, vertices.data());
@@ -3534,7 +3581,13 @@ namespace vgfw
         void MeshPrimitive::draw(renderer::RenderContext& rc) const
         {
             assert(vertexBuffer && indexBuffer);
-            rc.draw(*vertexBuffer, *indexBuffer, indexCount, vertexCount);
+            rc.draw(*vertexBuffer,
+                    *indexBuffer,
+                    {
+                        .topology    = renderer::PrimitiveTopology::eTriangleList,
+                        .numVertices = vertexCount,
+                        .numIndices  = indexCount,
+                    });
         }
 
         void Model::bindMeshPrimitiveTextures(uint32_t                 primitiveIndex,
@@ -3766,8 +3819,7 @@ namespace vgfw
 
                 meshPrimitive.ownerModel        = &model;
                 meshPrimitive.indexInOwnerModel = model.meshPrimitives.size() - 1;
-                meshPrimitive.modelMatrix       = glm::scale(glm::mat4(1.0), scale);
-                meshPrimitive.build(vertexFormatBuilder, rc);
+                meshPrimitive.build(vertexFormatBuilder, scale, rc);
             }
 
             return true;
@@ -4022,8 +4074,7 @@ namespace vgfw
 
                     meshPrimitive.ownerModel        = &model;
                     meshPrimitive.indexInOwnerModel = model.meshPrimitives.size() - 1;
-                    meshPrimitive.modelMatrix       = glm::scale(glm::mat4(1.0), scale);
-                    meshPrimitive.build(vertexFormatBuilder, rc);
+                    meshPrimitive.build(vertexFormatBuilder, scale, rc);
                 }
             }
 

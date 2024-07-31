@@ -32,5 +32,6 @@ jobs:
 
       - name: Build
         run: |
+          xmake repo -u -y
           xmake f --cc=gcc-13 --cxx=g++-13 -vD -y
           xmake -vD -y

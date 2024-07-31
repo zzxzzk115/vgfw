@@ -172,7 +172,7 @@ int main()
             .setUniformMat4("view", view)
             .setUniformMat4("projection", projection)
             .bindTexture(0, *texture)
-            .draw(vertexBuffer, {}, 0, 36);
+            .draw(vertexBuffer, {}, {.numVertices = 36});
 
         ImGui::Begin("Cube");
         ImGui::SliderFloat("Camera FOV", &fov, 1.0f, 179.0f);
