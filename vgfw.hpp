@@ -3661,7 +3661,10 @@ namespace vgfw
         {
             std::string              inputfile = modelPath.generic_string();
             tinyobj::ObjReaderConfig readerConfig;
-            readerConfig.mtl_search_path = "./"; // Path to material files
+            
+            // The MTL file path was not correctly parsed when loading the OBJ model, causing the material file to fail to load.
+            // Comment out this line to load the MTL file from the same directory as the OBJ file.
+            // readerConfig.mtl_search_path = "./"; // Path to material files
 
             tinyobj::ObjReader reader;
 
