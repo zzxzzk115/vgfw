@@ -952,6 +952,7 @@ namespace vgfw
             RenderContext& setUniform1i(const std::string& name, int32_t);
             RenderContext& setUniform1ui(const std::string& name, uint32_t);
 
+            RenderContext& setUniformVec2(const std::string& name, const glm::vec2&);
             RenderContext& setUniformVec3(const std::string& name, const glm::vec3&);
             RenderContext& setUniformVec4(const std::string& name, const glm::vec4&);
 
@@ -1220,7 +1221,9 @@ namespace vgfw
             int              indexInOwnerModel {-1};
             resource::Model* ownerModel {nullptr};
 
-            void build(renderer::VertexFormat::Builder& vertexFormatBuilder, const glm::vec3& scale, renderer::RenderContext& rc);
+            void build(renderer::VertexFormat::Builder& vertexFormatBuilder,
+                       const glm::vec3&                 scale,
+                       renderer::RenderContext&         rc);
 
         private:
             friend class renderer::RenderContext;
@@ -2479,6 +2482,16 @@ namespace vgfw
             return *this;
         }
 
+        RenderContext& RenderContext::setUniformVec2(const std::string& name, const glm::vec2& v)
+        {
+            const auto location = glGetUniformLocation(m_CurrentPipeline.m_Program, name.data());
+            if (location != GL_INVALID_INDEX)
+            {
+                glProgramUniform2fv(m_CurrentPipeline.m_Program, location, 1, glm::value_ptr(v));
+            }
+            return *this;
+        }
+
         RenderContext& RenderContext::setUniformVec3(const std::string& name, const glm::vec3& v)
         {
             const auto location = glGetUniformLocation(m_CurrentPipeline.m_Program, name.data());
@@ -3500,7 +3513,9 @@ namespace vgfw
 
     namespace resource
     {
-        void MeshPrimitive::build(renderer::VertexFormat::Builder& vertexFormatBuilder, const glm::vec3& scale, renderer::RenderContext& rc)
+        void MeshPrimitive::build(renderer::VertexFormat::Builder& vertexFormatBuilder,
+                                  const glm::vec3&                 scale,
+                                  renderer::RenderContext&         rc)
         {
             vertexFormat = vertexFormatBuilder.build();
             indexCount   = indices.size();
@@ -3714,9 +3729,9 @@ namespace vgfw
         {
             std::string              inputfile = modelPath.generic_string();
             tinyobj::ObjReaderConfig readerConfig;
-            
-            // The MTL file path was not correctly parsed when loading the OBJ model, causing the material file to fail to load.
-            // Comment out this line to load the MTL file from the same directory as the OBJ file.
+
+            // The MTL file path was not correctly parsed when loading the OBJ model, causing the material file to fail
+            // to load. Comment out this line to load the MTL file from the same directory as the OBJ file.
             // readerConfig.mtl_search_path = "./"; // Path to material files
 
             tinyobj::ObjReader reader;
