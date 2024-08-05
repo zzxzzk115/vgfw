@@ -301,6 +301,21 @@ Please see more examples in `examples` folder.
 
 ![06-deferred-framegraph-exported](./media/images/06-deferred-framegraph-exported.svg)
 
+## Acknowledgements
+
+We would like to thank the following projects for their invaluable contribution to our work:
+
+- [spdlog](https://github.com/gabime/spdlog) (Logger)
+- [imgui](https://github.com/ocornut/imgui) (GUI)
+- [glad](https://github.com/Dav1dde/glad) (OpenGL Loader & Extension)
+- [glfw](https://github.com/glfw/glfw) (Window Abstraction)
+- [stb](https://github.com/nothings/stb) (Image Loader)
+- [tracy](https://github.com/wolfpld/tracy) (Frame Profiler)
+- [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader) (OBJ Loader)
+- [tinygltf](https://github.com/syoyo/tinygltf) (glTF Loader)
+- [FrameGraph](https://github.com/skaarj1989/FrameGraph) (FrameGraph Implementation)
+- [FrameGraph-Example](https://github.com/skaarj1989/FrameGraph-Example) (The Best Practice of FrameGraph OpenGL Implementation)
+
 ## License
 
 This project is licensed under the [MIT](https://github.com/zzxzzk115/vgfw/blob/master/LICENSE) license.
