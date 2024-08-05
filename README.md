@@ -309,6 +309,7 @@ We would like to thank the following projects for their invaluable contribution 
 - [imgui](https://github.com/ocornut/imgui) (GUI)
 - [glad](https://github.com/Dav1dde/glad) (OpenGL Loader & Extension)
 - [glfw](https://github.com/glfw/glfw) (Window Abstraction)
+- [glm](https://github.com/g-truc/glm) (Math library)
 - [stb](https://github.com/nothings/stb) (Image Loader)
 - [tracy](https://github.com/wolfpld/tracy) (Frame Profiler)
 - [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader) (OBJ Loader)
