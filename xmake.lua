@@ -82,7 +82,7 @@ add_rules("plugin.vsxmake.autoupdate")
 add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode"})
 
 -- add my own xmake-repo here
-add_repositories("my-xmake-repo https://github.com/zzxzzk115/xmake-repo.git dev")
+add_repositories("my-xmake-repo https://github.com/zzxzzk115/xmake-repo.git backup")
 
 -- add requirements
 add_requires("fg", "glad", "glfw", "glm", "spdlog", "stb", "tinyobjloader", "tinygltf")
@@ -100,6 +100,8 @@ target("vgfw")
 
     add_rules("utils.install.cmake_importfiles")
     add_rules("utils.install.pkgconfig_importfiles")
+
+    add_defines("FMT_UNICODE=0", {public = true})
 
     -- add packages
     add_packages("fg", { public = true })

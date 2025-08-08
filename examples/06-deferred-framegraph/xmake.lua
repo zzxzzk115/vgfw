@@ -1,5 +1,5 @@
 add_requires("shaderc", {configs = {binaryonly = true}})
-add_requires("tracy")
+add_requires("tracy", {configs = {on_demand = true}})
 
 -- target defination, name: 06-deferred-framegraph
 target("06-deferred-framegraph")

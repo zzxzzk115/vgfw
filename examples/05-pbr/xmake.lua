@@ -1,5 +1,5 @@
 add_requires("shaderc", {configs = {binaryonly = true}})
-add_requires("tracy")
+add_requires("tracy", {configs = {on_demand = true}})
 
 -- target defination, name: 05-pbr
 target("05-pbr")
