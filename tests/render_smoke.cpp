@@ -9,6 +9,17 @@
 static std::string testMode;
 static bool rejected = false;
 static int pendingError = GLFW_NO_ERROR;
+static bool zeroFramebuffer = false;
+static void getTestFramebufferSize(GLFWwindow* window, int* width, int* height)
+{
+    if (zeroFramebuffer)
+    {
+        if (width) *width = 0;
+        if (height) *height = 0;
+        return;
+    }
+    glfwGetFramebufferSize(window, width, height);
+}
 static GLFWwindow* createTestWindow(int w, int h, const char* title, GLFWmonitor* monitor, GLFWwindow* share)
 {
     if (testMode == "fallback" && !rejected)
@@ -17,7 +28,7 @@ static GLFWwindow* createTestWindow(int w, int h, const char* title, GLFWmonitor
         pendingError = GLFW_VERSION_UNAVAILABLE;
         return nullptr;
     }
-    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_VISIBLE, testMode == "hidpi" ? GLFW_TRUE : GLFW_FALSE);
     return glfwCreateWindow(w, h, title, monitor, share);
 }
 static int getTestError(const char** description)
@@ -41,12 +52,14 @@ static int loadTestGL(GLADloadproc proc)
 #define glfwCreateWindow createTestWindow
 #define glfwGetError getTestError
 #define gladLoadGLLoader loadTestGL
+#define glfwGetFramebufferSize getTestFramebufferSize
 #define VGFW_IMPLEMENTATION
 #define VGFW_ENABLE_GL_DEBUG
 #include "vgfw.hpp"
 #undef glfwCreateWindow
 #undef glfwGetError
 #undef gladLoadGLLoader
+#undef glfwGetFramebufferSize
 
 static void require(bool condition, const char* message)
 {
@@ -58,7 +71,7 @@ try
 {
     if (argc > 1) testMode = argv[1];
     vgfw::init();
-    auto window = vgfw::window::create({.title = "VGFW smoke", .width = 64, .height = 64});
+    auto window = vgfw::window::create({.title = "VGFW smoke", .width = 64, .height = 64, .isResizable = true});
     try { vgfw::renderer::init({.window = window}); }
     catch (const std::runtime_error& error)
     {
@@ -83,6 +96,40 @@ try
     }
     using namespace vgfw::renderer;
     auto& rc = vgfw::renderer::getRenderContext();
+    auto* native = static_cast<GLFWwindow*>(window->getPlatformWindow());
+    auto checkWindowMetrics = [&]()
+    {
+        int width, height, pixelWidth, pixelHeight;
+        glfwGetWindowSize(native, &width, &height);
+        glfwGetFramebufferSize(native, &pixelWidth, &pixelHeight);
+        require(window->getWidth() == static_cast<uint32_t>(width) &&
+                window->getHeight() == static_cast<uint32_t>(height), "Logical window size is stale");
+        require(window->getFramebufferWidth() == static_cast<uint32_t>(pixelWidth) &&
+                window->getFramebufferHeight() == static_cast<uint32_t>(pixelHeight), "Framebuffer size is incorrect");
+    };
+    checkWindowMetrics();
+    const int resizeWidth = testMode == "hidpi" ? 640 : 96;
+    const int resizeHeight = testMode == "hidpi" ? 360 : 80;
+    glfwSetWindowSize(native, resizeWidth, resizeHeight);
+    for (int i = 0; i < 100; ++i)
+    {
+        window->onTick();
+        if (window->getWidth() == resizeWidth && window->getHeight() == resizeHeight) break;
+        glfwWaitEventsTimeout(0.01);
+    }
+    if (testMode == "hidpi")
+        for (int i = 0; i < 100 && window->getFramebufferWidth() == window->getWidth(); ++i)
+        {
+            glfwWaitEventsTimeout(0.01);
+            window->onTick();
+        }
+    checkWindowMetrics();
+    if (testMode == "hidpi") require(window->getFramebufferWidth() != window->getWidth(), "HiDPI test requires a scaled display");
+    require(window->getWidth() == resizeWidth && window->getHeight() == resizeHeight, "Window resize was not reflected in the API");
+    zeroFramebuffer = true;
+    require(window->getFramebufferWidth() == 0 && window->getFramebufferHeight() == 0 && window->isMinimized(),
+            "A zero-size framebuffer must not be rendered");
+    zeroFramebuffer = false;
     auto buffer = rc.createBuffer(32);
     const uint32_t value = 123;
     rc.upload(buffer, 4, sizeof(value), &value);
@@ -164,6 +211,28 @@ void main() { color = texture(image, vec2(0.5)) * tint; }
     const auto depthFbo = rc.beginRendering({.area={.extent={16,16}}, .depthAttachment=AttachmentInfo{depth,0,{},{},1.0f}});
     require(glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE, "Depth framebuffer failed");
     rc.endRendering(depthFbo);
+
+    // Fill the entire pixel framebuffer, including its far corner at fractional DPI.
+    rc.upload(texture, 0, glm::uvec2(2), {GL_RGBA, GL_UNSIGNED_BYTE, red});
+    vgfw::renderer::beginFrame();
+    const auto pixelsWide = window->getFramebufferWidth();
+    const auto pixelsHigh = window->getFramebufferHeight();
+    rc.beginRendering({.extent = {pixelsWide, pixelsHigh}}, glm::vec4(0));
+    rc.bindGraphicsPipeline(pipeline).bindTexture(0, texture, sampler)
+        .setUniform1i("image", 0).setUniformVec4("tint", glm::vec4(1)).setUniformMat4("transform", glm::mat4(1));
+    rc.draw(vb, ib, {.numVertices=3, .numIndices=3});
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    glReadPixels(pixelsWide - 1, pixelsHigh - 1, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
+    require(pixel[0] > 240 && pixel[1] < 10, "Viewport does not cover the full pixel framebuffer");
+    vgfw::renderer::endFrame();
+    const auto& io = ImGui::GetIO();
+    require(io.DisplaySize.x == window->getWidth() && io.DisplaySize.y == window->getHeight(),
+            "ImGui logical display size was overwritten");
+    require(std::abs(io.DisplaySize.x * io.DisplayFramebufferScale.x - pixelsWide) < 0.1f &&
+            std::abs(io.DisplaySize.y * io.DisplayFramebufferScale.y - pixelsHigh) < 0.1f,
+            "ImGui framebuffer scale is incorrect");
+    std::cout << "Window " << window->getWidth() << 'x' << window->getHeight()
+              << ", framebuffer " << pixelsWide << 'x' << pixelsHigh << '\n';
     if (legacy)
     {
         bool denied = false;

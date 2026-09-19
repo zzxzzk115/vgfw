@@ -23,11 +23,16 @@ int main()
     while (!window->shouldClose())
     {
         window->onTick();
+        if (window->isMinimized())
+        {
+            glfwWaitEventsTimeout(0.05);
+            continue;
+        }
 
         vgfw::renderer::beginFrame();
 
         // Render
-        rc.beginRendering({.extent = {.width = window->getWidth(), .height = window->getHeight()}},
+        rc.beginRendering({.extent = {.width = window->getFramebufferWidth(), .height = window->getFramebufferHeight()}},
                           glm::vec4 {0.2f, 0.3f, 0.3f, 1.0f});
 
         vgfw::renderer::endFrame();

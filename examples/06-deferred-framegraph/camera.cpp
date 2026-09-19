@@ -5,9 +5,10 @@
 
 void Camera::updateData(const std::shared_ptr<vgfw::window::Window>& window)
 {
+    if (window->getFramebufferWidth() == 0 || window->getFramebufferHeight() == 0) return;
     auto direction  = glm::rotateY(glm::rotateX(glm::vec3(0, 0, 1), glm::radians(pitch)), glm::radians(yaw));
     data.view       = glm::lookAt(data.position, data.position + direction, glm::vec3(.0f, 1.0f, .0f));
-    data.projection = glm::perspective(glm::radians(fov), window->getWidth() * 1.0f / window->getHeight(), zNear, zFar);
+    data.projection = glm::perspective(glm::radians(fov), window->getFramebufferWidth() * 1.0f / window->getFramebufferHeight(), zNear, zFar);
 }
 
 void Camera::update(const std::shared_ptr<vgfw::window::Window>& window, float dt)
@@ -22,6 +23,7 @@ void Camera::update(const std::shared_ptr<vgfw::window::Window>& window, float d
         first = false;
         lastX = xpos;
         lastY = ypos;
+        updateData(window);
         return;
     }
     static bool isCapslockDown = false;
@@ -40,6 +42,7 @@ void Camera::update(const std::shared_ptr<vgfw::window::Window>& window, float d
     {
         lastX = xpos;
         lastY = ypos;
+        updateData(window);
         return;
     }
 

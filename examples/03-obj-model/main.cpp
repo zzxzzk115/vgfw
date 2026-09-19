@@ -133,6 +133,11 @@ int main()
     while (!window->shouldClose())
     {
         window->onTick();
+        if (window->isMinimized())
+        {
+            glfwWaitEventsTimeout(0.05);
+            continue;
+        }
 
         // Calculate the elapsed time
         auto  currentTime = std::chrono::high_resolution_clock::now();
@@ -146,12 +151,12 @@ int main()
 
         // Create the projection matrix
         glm::mat4 projection =
-            glm::perspective(glm::radians(fov), window->getWidth() * 1.0f / window->getHeight(), 0.1f, 100.0f);
+            glm::perspective(glm::radians(fov), window->getFramebufferWidth() * 1.0f / window->getFramebufferHeight(), 0.1f, 100.0f);
 
         vgfw::renderer::beginFrame();
 
         // Render
-        rc.beginRendering({.extent = {.width = window->getWidth(), .height = window->getHeight()}},
+        rc.beginRendering({.extent = {.width = window->getFramebufferWidth(), .height = window->getFramebufferHeight()}},
                           glm::vec4 {0.2f, 0.3f, 0.3f, 1.0f},
                           1.0f);
         rc.bindGraphicsPipeline(graphicsPipeline)

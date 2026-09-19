@@ -75,6 +75,11 @@ int main()
         float dt = deltaTime.count();
 
         window->onTick();
+        if (window->isMinimized())
+        {
+            glfwWaitEventsTimeout(0.05);
+            continue;
+        }
 
         camera.update(window, dt);
 
@@ -86,7 +91,7 @@ int main()
 
         // GBuffer pass
         gBufferPass.addToGraph(
-            fg, blackboard, {.width = window->getWidth(), .height = window->getHeight()}, sponza.meshPrimitives);
+            fg, blackboard, {.width = window->getFramebufferWidth(), .height = window->getFramebufferHeight()}, sponza.meshPrimitives);
 
         // Deferred Lighting pass
         auto& sceneColor = blackboard.add<SceneColorData>();

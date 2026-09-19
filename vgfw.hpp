@@ -2,7 +2,7 @@
  * @file vgfw.hpp
  * @author Kexuan Zhang (zzxzzk115@gmail.com)
  * @brief VGFW (V Graphics FrameWork) is a library designed for rapidly creating graphics prototypes.
- * @version 1.2.0
+ * @version 1.2.1
  *
  * @copyright Copyright (c) 2024
  *
@@ -252,18 +252,23 @@ namespace vgfw
             virtual void onTick() = 0;
 
             /**
-             * @brief Get the width of window
+             * @brief Get the current window width in screen coordinates (not framebuffer pixels)
              *
              * @return uint32_t
              */
             virtual uint32_t getWidth() const = 0;
 
             /**
-             * @brief Get the height of window
+             * @brief Get the current window height in screen coordinates (not framebuffer pixels)
              *
              * @return uint32_t
              */
             virtual uint32_t getHeight() const = 0;
+
+            // Use framebuffer pixels for OpenGL viewports and render targets.
+            // Backends without separate pixel dimensions may use the logical size.
+            virtual uint32_t getFramebufferWidth() const { return getWidth(); }
+            virtual uint32_t getFramebufferHeight() const { return getHeight(); }
 
             virtual bool shouldClose() const = 0;
             virtual bool isMinimized() const = 0;
@@ -295,9 +300,11 @@ namespace vgfw
 
             virtual void onTick() override;
 
-            virtual uint32_t getWidth() const override { return m_Data.width; }
+            virtual uint32_t getWidth() const override;
 
-            virtual uint32_t getHeight() const override { return m_Data.height; }
+            virtual uint32_t getHeight() const override;
+            virtual uint32_t getFramebufferWidth() const override;
+            virtual uint32_t getFramebufferHeight() const override;
 
             virtual bool shouldClose() const override;
             virtual bool isMinimized() const override;
@@ -329,7 +336,6 @@ namespace vgfw
             struct WindowData
             {
                 std::string  title;
-                unsigned int width {0}, height {0};
                 GLFWWindow*  platformWindow {nullptr};
                 bool         isMinimized {false};
             };
@@ -1466,8 +1472,6 @@ namespace vgfw
             }
 
             m_Data.title          = initInfo.title;
-            m_Data.width          = initInfo.width;
-            m_Data.height         = initInfo.height;
             m_Data.platformWindow = this;
 
             return true;
@@ -1492,16 +1496,38 @@ namespace vgfw
 
         bool GLFWWindow::shouldClose() const { return m_Window && glfwWindowShouldClose(m_Window); }
 
+        uint32_t GLFWWindow::getWidth() const
+        {
+            int width = 0;
+            if (m_Window) glfwGetWindowSize(m_Window, &width, nullptr);
+            return width > 0 ? static_cast<uint32_t>(width) : 0;
+        }
+
+        uint32_t GLFWWindow::getHeight() const
+        {
+            int height = 0;
+            if (m_Window) glfwGetWindowSize(m_Window, nullptr, &height);
+            return height > 0 ? static_cast<uint32_t>(height) : 0;
+        }
+
+        uint32_t GLFWWindow::getFramebufferWidth() const
+        {
+            int width = 0;
+            if (m_Window) glfwGetFramebufferSize(m_Window, &width, nullptr);
+            return width > 0 ? static_cast<uint32_t>(width) : 0;
+        }
+
+        uint32_t GLFWWindow::getFramebufferHeight() const
+        {
+            int height = 0;
+            if (m_Window) glfwGetFramebufferSize(m_Window, nullptr, &height);
+            return height > 0 ? static_cast<uint32_t>(height) : 0;
+        }
+
         bool GLFWWindow::isMinimized() const
         {
-            if (m_Window)
-            {
-                int width, height;
-                glfwGetWindowSize(m_Window, &width, &height);
-                return width == 0 || height == 0;
-            }
-
-            return false;
+            return !m_Window || glfwGetWindowAttrib(m_Window, GLFW_ICONIFIED) ||
+                   getFramebufferWidth() == 0 || getFramebufferHeight() == 0;
         }
 
         void GLFWWindow::makeCurrentContext()
@@ -3916,15 +3942,13 @@ namespace vgfw
                     ImGui::End();
                 }
 
-                ImGuiIO& io = ImGui::GetIO();
-                io.DisplaySize =
-                    ImVec2(getGraphicsContext().getWindow()->getWidth(), getGraphicsContext().getWindow()->getHeight());
-
+                // The GLFW backend owns DisplaySize and DisplayFramebufferScale.
+                // Keep the logical dimensions and pixel scale it measured in NewFrame.
                 ImGui::Render();
 
                 ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-                if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+                if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
                 {
                     GLFWwindow* backupCurrentContext = glfwGetCurrentContext();
                     ImGui::UpdatePlatformWindows();

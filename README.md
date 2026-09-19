@@ -53,6 +53,15 @@ Applications must supply shaders compatible with the actual context. Examples
 00–03 use GLSL 3.30; examples 04–06 still require GLSL 4.50. A 3.3 context does
 not make a GLSL 4.50/4.60 application compatible automatically.
 
+### Window and framebuffer sizes
+
+`getWidth()` and `getHeight()` return the current logical window size.
+Use `getFramebufferWidth()` and `getFramebufferHeight()` for OpenGL viewports,
+render targets, and projection aspect ratios. These pixel dimensions can differ
+on HiDPI displays and can change independently when moving between monitors.
+Skip rendering while `isMinimized()` is true, including zero-size framebuffers.
+Dear ImGui's GLFW backend manages its own logical display size and pixel scale.
+
 ### Rendering tests
 
 ```sh
@@ -66,7 +75,11 @@ first context request and verifies that the driver returns a real 3.3 context.
 It checks pixel readback from a textured indexed draw, buffer operations,
 texture clears, cubemap and depth attachments, and unsupported compute work.
 The same rendering checks run on the preferred context. Additional tests
-verify GLAD failure and missing required entry points.
+verify GLAD failure and missing required entry points. Rendering tests also
+resize the window, check live logical/pixel sizes and ImGui scaling, simulate a
+zero-size framebuffer, and read the far corner to verify full viewport coverage.
+On a scaled display, `xmake run render-smoke hidpi` also verifies a visible
+window with different logical and framebuffer dimensions.
 
 ### Prerequisites
 

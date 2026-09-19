@@ -102,6 +102,11 @@ int main()
         float deltaTimeSeconds = deltaTime.count();
 
         window->onTick();
+        if (window->isMinimized())
+        {
+            glfwWaitEventsTimeout(0.05);
+            continue;
+        }
 
         camera.update(window, deltaTimeSeconds);
 
@@ -114,7 +119,7 @@ int main()
             VGFW_PROFILE_NAMED_SCOPE("Rendering");
 
             // Render
-            rc.beginRendering({.extent = {.width = window->getWidth(), .height = window->getHeight()}},
+            rc.beginRendering({.extent = {.width = window->getFramebufferWidth(), .height = window->getFramebufferHeight()}},
                               glm::vec4 {0.2f, 0.3f, 0.3f, 1.0f},
                               1.0f);
 
@@ -167,9 +172,10 @@ int main()
 
 void Camera::updateData(const std::shared_ptr<vgfw::window::Window>& window)
 {
+    if (window->getFramebufferWidth() == 0 || window->getFramebufferHeight() == 0) return;
     auto direction  = glm::rotateY(glm::rotateX(glm::vec3(0, 0, 1), glm::radians(pitch)), glm::radians(yaw));
     data.view       = glm::lookAt(data.position, data.position + direction, glm::vec3(.0f, 1.0f, .0f));
-    data.projection = glm::perspective(glm::radians(fov), window->getWidth() * 1.0f / window->getHeight(), zNear, zFar);
+    data.projection = glm::perspective(glm::radians(fov), window->getFramebufferWidth() * 1.0f / window->getFramebufferHeight(), zNear, zFar);
 }
 
 void Camera::update(const std::shared_ptr<vgfw::window::Window>& window, float dt)
@@ -184,6 +190,7 @@ void Camera::update(const std::shared_ptr<vgfw::window::Window>& window, float d
         first = false;
         lastX = xpos;
         lastY = ypos;
+        updateData(window);
         return;
     }
     static bool isCapslockDown = false;
@@ -202,6 +209,7 @@ void Camera::update(const std::shared_ptr<vgfw::window::Window>& window, float d
     {
         lastX = xpos;
         lastY = ypos;
+        updateData(window);
         return;
     }
 

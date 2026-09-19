@@ -2,7 +2,7 @@
 set_project("vgfw")
 
 -- set project version
-set_version("1.2.0")
+set_version("1.2.1")
 
 -- set language version: C++ 20
 set_languages("cxx20")
@@ -76,7 +76,10 @@ rule("preprocess_shaders")
         local target_shaders_dir = path.join(target:targetdir(), "shaders")
         local output_path = path.join(target_shaders_dir, path.filename(sourcefile))
         os.mkdir(target_shaders_dir)
-        os.execv("glslc", {"-I", shader_root, "-E", sourcefile, is_mode("debug") and "-O0" or "-Os", "-o", output_path})
+        import("lib.detect.find_tool")
+        local envs = os.joinenvs(target:pkgenvs(), os.getenvs())
+        local glslc = assert(find_tool("glslc", {envs = envs}), "glslc not found in shaderc package or PATH")
+        os.execv(glslc.program, {"-I", shader_root, "-E", sourcefile, is_mode("debug") and "-O0" or "-Os", "-o", output_path}, {envs = envs})
         print("Preprocessing shader: " .. sourcefile .. " -> " .. output_path)
     end)
 rule_end()
