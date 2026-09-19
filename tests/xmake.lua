@@ -1,0 +1,8 @@
+target("render-smoke")
+    set_kind("binary")
+    add_files("render_smoke.cpp")
+    add_deps("vgfw")
+    add_tests("modern")
+    add_tests("fallback", {runargs = {"fallback"}})
+    add_tests("loader-failure", {runargs = {"loader-failure"}})
+    add_tests("missing-function", {runargs = {"missing-function"}})

@@ -21,7 +21,7 @@
 </p>
 
 <div align="center">
-  Currently it's available on Windows & Linux with OpenGL 4.6.
+  Available on Windows & Linux, preferring OpenGL 4.6 with an OpenGL 3.3 rendering fallback.
 </div>
 
 ## Features
@@ -33,6 +33,40 @@
 - **Tracy profiler supported**
 
 ## Build VGFW examples with XMake
+
+### OpenGL support
+
+VGFW first requests an OpenGL 4.6 Core context. If that version is unavailable,
+it retries with OpenGL 3.3 Core. GLAD is generated for OpenGL 4.6 Core and loads
+the functions supported by the context actually created; a 4.6 loader does not
+require a 4.6 context.
+
+The 3.3 path supports vertex/index/uniform buffers, textures, texture arrays,
+cubemaps, framebuffers, uniforms, instancing, and basic blending. It uses
+bind-based operations instead of DSA and preserves temporary bindings.
+Debug groups are optional. Compute shaders and SSBOs require 4.3; image
+load/store requires 4.2; tessellation, cubemap arrays, and independent blend
+functions require 4.0. Unsupported operations report an error instead of
+calling unavailable functions.
+
+Applications must supply shaders compatible with the actual context. Examples
+00–03 use GLSL 3.30; examples 04–06 still require GLSL 4.50. A 3.3 context does
+not make a GLSL 4.50/4.60 application compatible automatically.
+
+### Rendering tests
+
+```sh
+xmake f -y --tests=y
+xmake build render-smoke
+xmake test -v
+```
+
+These tests need a working desktop OpenGL driver. The fallback test rejects the
+first context request and verifies that the driver returns a real 3.3 context.
+It checks pixel readback from a textured indexed draw, buffer operations,
+texture clears, cubemap and depth attachments, and unsupported compute work.
+The same rendering checks run on the preferred context. Additional tests
+verify GLAD failure and missing required entry points.
 
 ### Prerequisites
 

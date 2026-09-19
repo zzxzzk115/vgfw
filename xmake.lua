@@ -2,7 +2,7 @@
 set_project("vgfw")
 
 -- set project version
-set_version("1.0.0")
+set_version("1.2.0")
 
 -- set language version: C++ 20
 set_languages("cxx20")
@@ -10,6 +10,10 @@ set_languages("cxx20")
 -- global options
 option("examples") -- build examples?
     set_default(true)
+option_end()
+
+option("tests")
+    set_default(false)
 option_end()
 
 -- if build on windows
@@ -85,7 +89,8 @@ add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode"})
 add_repositories("my-xmake-repo https://github.com/zzxzzk115/xmake-repo.git backup")
 
 -- add requirements
-add_requires("fg", "glad", "glfw", "glm", "spdlog", "stb", "tinyobjloader", "tinygltf")
+add_requires("fg", "glfw", "glm", "spdlog", "stb", "tinyobjloader", "tinygltf")
+add_requires("glad v0.1.36", {configs = {api = "gl=4.6", profile = "core"}})
 add_requires("imgui v1.90.8-docking", {configs = {glfw = true, opengl3 = true, wchar32 = true}})
 
 -- target defination, name: vgfw
@@ -117,4 +122,8 @@ target("vgfw")
 -- if build examples, then include examples
 if has_config("examples") then
     includes("examples")
+end
+
+if has_config("tests") then
+    includes("tests")
 end

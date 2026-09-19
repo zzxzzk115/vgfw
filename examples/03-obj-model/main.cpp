@@ -4,19 +4,19 @@
 #include <chrono>
 
 const char* vertexShaderSource = R"(
-#version 450
+#version 330 core
 
 layout(location = 0) in vec3 aPos;
 layout(location = 1) in vec3 aNormal;
 layout(location = 2) in vec2 aTexCoords;
 
-layout(location = 0) out vec2 vTexCoords;
-layout(location = 1) out vec3 vFragPos;
-layout(location = 2) out vec3 vNormal;
+out vec2 vTexCoords;
+out vec3 vFragPos;
+out vec3 vNormal;
 
-layout(location = 0) uniform mat4 model;
-layout(location = 1) uniform mat4 view;
-layout(location = 2) uniform mat4 projection;
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
 
 void main()
 {
@@ -28,20 +28,20 @@ void main()
 )";
 
 const char* fragmentShaderSource = R"(
-#version 450
+#version 330 core
 
-layout(location = 0) in vec2 vTexCoords;
-layout(location = 1) in vec3 vFragPos;
-layout(location = 2) in vec3 vNormal;
+in vec2 vTexCoords;
+in vec3 vFragPos;
+in vec3 vNormal;
 
-layout(location = 0) out vec4 FragColor;
+out vec4 FragColor;
 
-layout(binding = 0) uniform sampler2D spotTexture;
+uniform sampler2D spotTexture;
 
-layout(location = 3) uniform vec3 lightPos;
-layout(location = 4) uniform vec3 viewPos;
-layout(location = 5) uniform vec3 lightColor;
-layout(location = 6) uniform vec3 objectColor;
+uniform vec3 lightPos;
+uniform vec3 viewPos;
+uniform vec3 lightColor;
+uniform vec3 objectColor;
 
 void main()
 {

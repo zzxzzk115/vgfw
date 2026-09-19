@@ -2,7 +2,7 @@
  * @file vgfw.hpp
  * @author Kexuan Zhang (zzxzzk115@gmail.com)
  * @brief VGFW (V Graphics FrameWork) is a library designed for rapidly creating graphics prototypes.
- * @version 1.1.0
+ * @version 1.2.0
  *
  * @copyright Copyright (c) 2024
  *
@@ -27,16 +27,16 @@
 #include <stdexcept>
 #endif
 
-// Currently, we only support Windows & Linux (DSA is not available on macOS (GL 4.1))
+// Currently, we only support Windows & Linux.
 
 #define VGFW_PLATFORM_DARWIN 0
 #define VGFW_PLATFORM_LINUX 0
 #define VGFW_PLATFORM_WINDOWS 0
 
-#if defined(__APPLE__) && defined(__MACH__) // TODO: Support non-DSA
+#if defined(__APPLE__) && defined(__MACH__) // macOS is not currently tested or supported
 // #undef VGFW_PLATFORM_DARWIN
 // #define VGFW_PLATFORM_DARWIN 1
-#error "macOS is not supported in version 1.0.0"
+#error "macOS is not supported"
 #elif defined(__linux__)
 #undef VGFW_PLATFORM_LINUX
 #define VGFW_PLATFORM_LINUX 1
@@ -50,13 +50,9 @@
 #define VGFW_RENDER_API_OPENGL_MIN_MAJOR 3
 #define VGFW_RENDER_API_OPENGL_MIN_MINOR 3
 
-// force OpenGL 4.6 on Windows
-#if VGFW_PLATFORM_WINDOWS
-#undef VGFW_RENDER_API_OPENGL_MIN_MAJOR
-#undef VGFW_RENDER_API_OPENGL_MIN_MINOR
-#define VGFW_RENDER_API_OPENGL_MIN_MAJOR 4
-#define VGFW_RENDER_API_OPENGL_MIN_MINOR 6
-#endif
+// Prefer OpenGL 4.6 on every supported platform, with a 3.3 fallback.
+#define VGFW_RENDER_API_OPENGL_PREFERRED_MAJOR 4
+#define VGFW_RENDER_API_OPENGL_PREFERRED_MINOR 6
 
 #define VGFW_TRACE(...) ::vgfw::log::g_Logger->trace(__VA_ARGS__)
 #define VGFW_INFO(...) ::vgfw::log::g_Logger->info(__VA_ARGS__)
@@ -85,26 +81,30 @@
 
 #include <glad/glad.h>
 
+#ifndef GL_VERSION_4_6
+#error "Generate GLAD with OpenGL 4.6 Core support (also includes OpenGL 3.3)"
+#endif
+
 #ifdef VGFW_ENABLE_TRACY
 #define TRACY_ENABLE
 #include <tracy/Tracy.hpp>
 
 #define VGFW_PROFILE_FUNCTION ZoneScoped;
-#define VGFW_PROFILE_NAMED_SCOPE(__VA_ARGS__) ZoneScopedN(__VA_ARGS__);
+#define VGFW_PROFILE_NAMED_SCOPE(...) ZoneScopedN(__VA_ARGS__);
 #define VGFW_PROFILE_END_OF_FRAME FrameMark;
 
 #include <tracy/TracyOpenGL.hpp>
 
 #define VGFW_PROFILE_GL_INIT_CONTEXT TracyGpuContext;
-#define VGFW_PROFILE_GL(__VA_ARGS__) TracyGpuZone(__VA_ARGS__);
+#define VGFW_PROFILE_GL(...) TracyGpuZone(__VA_ARGS__);
 #define VGFW_PROFILE_GL_COLLECT TracyGpuCollect;
 #else
 #define VGFW_PROFILE_FUNCTION
-#define VGFW_PROFILE_NAMED_SCOPE(__VA_ARGS__)
+#define VGFW_PROFILE_NAMED_SCOPE(...)
 #define VGFW_PROFILE_END_OF_FRAME
 
 #define VGFW_PROFILE_GL_INIT_CONTEXT
-#define VGFW_PROFILE_GL(__VA_ARGS__)
+#define VGFW_PROFILE_GL(...)
 #define VGFW_PROFILE_GL_COLLECT
 #endif
 
@@ -989,7 +989,7 @@ namespace vgfw
             };
 
         private:
-            static GLuint createVertexArray(const VertexAttributes&);
+            GLuint createVertexArray(const VertexAttributes&);
 
             static Texture createImmutableTexture(Extent2D,
                                                   uint32_t depth,
@@ -998,7 +998,6 @@ namespace vgfw
                                                   uint32_t numMipLevels,
                                                   uint32_t numLayers);
 
-            static void createFaceView(Texture& cubeMap, GLuint mipLevel, GLuint layer, GLuint face);
             static void attachTexture(GLuint framebuffer, GLenum attachment, const AttachmentInfo&);
 
             static GLuint createShaderProgram(std::initializer_list<GLuint> shaders);
@@ -1026,6 +1025,7 @@ namespace vgfw
 
             GLuint                                  m_DummyVAO {GL_NONE};
             std::unordered_map<std::size_t, GLuint> m_VertexArrays;
+            std::unordered_map<GLuint, VertexAttributes> m_VertexArrayAttributes;
         };
 
         // @return {data type, number of components, normalize}
@@ -1420,8 +1420,8 @@ namespace vgfw
 
             glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
             glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-            glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, VGFW_RENDER_API_OPENGL_MIN_MAJOR);
-            glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, VGFW_RENDER_API_OPENGL_MIN_MINOR);
+            glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, VGFW_RENDER_API_OPENGL_PREFERRED_MAJOR);
+            glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, VGFW_RENDER_API_OPENGL_PREFERRED_MINOR);
 
             glfwWindowHint(GLFW_SAMPLES, static_cast<int>(initInfo.aaSample));
             glfwWindowHint(GLFW_RESIZABLE, initInfo.isResizable);
@@ -1441,6 +1441,23 @@ namespace vgfw
             }
 
             m_Window = glfwCreateWindow(requestWidth, requestHeight, initInfo.title.c_str(), requestMonitor, nullptr);
+            if (!m_Window)
+            {
+                const char* description = nullptr;
+                const int error = glfwGetError(&description);
+                if (error == GLFW_VERSION_UNAVAILABLE)
+                {
+                    VGFW_WARN("OpenGL 4.6 is unavailable; trying OpenGL 3.3");
+                    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, VGFW_RENDER_API_OPENGL_MIN_MAJOR);
+                    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, VGFW_RENDER_API_OPENGL_MIN_MINOR);
+                    m_Window = glfwCreateWindow(
+                        requestWidth, requestHeight, initInfo.title.c_str(), requestMonitor, nullptr);
+                }
+                else
+                {
+                    VGFW_ERROR("Failed to create OpenGL window: {0}", description ? description : "Unknown error");
+                }
+            }
             if (!m_Window)
             {
                 VGFW_ERROR("Failed to create GLFW window");
@@ -1535,11 +1552,276 @@ namespace vgfw
 
     namespace renderer
     {
+
+        namespace detail
+        {
+            bool hasDSA()
+            {
+                return GLAD_GL_VERSION_4_5 && glCreateVertexArrays && glCreateBuffers &&
+                       glCreateTextures && glCreateFramebuffers && glNamedBufferStorage;
+            }
+
+            struct BufferBinding
+            {
+                GLint previous;
+                explicit BufferBinding(GLuint id)
+                {
+                    glGetIntegerv(GL_COPY_WRITE_BUFFER_BINDING, &previous);
+                    glBindBuffer(GL_COPY_WRITE_BUFFER, id);
+                }
+                ~BufferBinding() { glBindBuffer(GL_COPY_WRITE_BUFFER, previous); }
+            };
+
+            struct TextureBinding
+            {
+                GLenum target;
+                GLint previous;
+                TextureBinding(GLenum type, GLuint id) : target(type)
+                {
+                    GLenum binding;
+                    switch (type)
+                    {
+                        case GL_TEXTURE_1D: binding = GL_TEXTURE_BINDING_1D; break;
+                        case GL_TEXTURE_2D: binding = GL_TEXTURE_BINDING_2D; break;
+                        case GL_TEXTURE_3D: binding = GL_TEXTURE_BINDING_3D; break;
+                        case GL_TEXTURE_1D_ARRAY: binding = GL_TEXTURE_BINDING_1D_ARRAY; break;
+                        case GL_TEXTURE_2D_ARRAY: binding = GL_TEXTURE_BINDING_2D_ARRAY; break;
+                        case GL_TEXTURE_CUBE_MAP: binding = GL_TEXTURE_BINDING_CUBE_MAP; break;
+                        case GL_TEXTURE_CUBE_MAP_ARRAY: binding = GL_TEXTURE_BINDING_CUBE_MAP_ARRAY; break;
+                        default: throw std::runtime_error("Unsupported texture target");
+                    }
+                    glGetIntegerv(binding, &previous);
+                    glBindTexture(target, id);
+                }
+                ~TextureBinding() { glBindTexture(target, previous); }
+            };
+
+            struct FramebufferBinding
+            {
+                GLint previous;
+                explicit FramebufferBinding(GLuint id)
+                {
+                    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &previous);
+                    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
+                }
+                ~FramebufferBinding() { glBindFramebuffer(GL_DRAW_FRAMEBUFFER, previous); }
+            };
+
+            struct ProgramBinding
+            {
+                GLint previous;
+                explicit ProgramBinding(GLuint id)
+                {
+                    glGetIntegerv(GL_CURRENT_PROGRAM, &previous);
+                    glUseProgram(id);
+                }
+                ~ProgramBinding() { glUseProgram(previous); }
+            };
+
+            std::pair<GLenum, GLenum> transferFormat(PixelFormat format)
+            {
+                switch (format)
+                {
+                    case PixelFormat::eR32I: return {GL_RED_INTEGER, GL_INT};
+                    case PixelFormat::eRGBA32UI: return {GL_RGBA_INTEGER, GL_UNSIGNED_INT};
+                    case PixelFormat::eDepth16:
+                    case PixelFormat::eDepth24:
+                    case PixelFormat::eDepth32F: return {GL_DEPTH_COMPONENT, GL_FLOAT};
+                    default: return {GL_RGBA, GL_FLOAT};
+                }
+            }
+
+            bool hasAnisotropy()
+            {
+                return GLAD_GL_VERSION_4_6 || glfwExtensionSupported("GL_ARB_texture_filter_anisotropic") ||
+                       glfwExtensionSupported("GL_EXT_texture_filter_anisotropic");
+            }
+            void CreateBuffers(GLsizei count, GLuint* ids)
+            {
+                if (hasDSA()) { glCreateBuffers(count, ids); return; }
+
+                glGenBuffers(count, ids);
+            }
+
+            void CreateSamplers(GLsizei count, GLuint* ids)
+            {
+                if (hasDSA()) { glCreateSamplers(count, ids); return; }
+
+                glGenSamplers(count, ids);
+            }
+
+            void CreateFramebuffers(GLsizei count, GLuint* ids)
+            {
+                if (hasDSA()) { glCreateFramebuffers(count, ids); return; }
+
+                glGenFramebuffers(count, ids);
+            }
+
+            void NamedBufferStorage(GLuint id, GLsizeiptr size, const void* data, GLbitfield flags)
+            {
+                if (hasDSA()) { glNamedBufferStorage(id, size, data, flags); return; }
+                BufferBinding binding(id);
+                glBufferData(GL_COPY_WRITE_BUFFER, size, data, GL_DYNAMIC_DRAW);
+            }
+
+            void NamedBufferSubData(GLuint id, GLintptr offset, GLsizeiptr size, const void* data)
+            {
+                if (hasDSA()) { glNamedBufferSubData(id, offset, size, data); return; }
+                BufferBinding binding(id);
+                glBufferSubData(GL_COPY_WRITE_BUFFER, offset, size, data);
+            }
+
+            void* MapNamedBuffer(GLuint id, GLenum access)
+            {
+                if (hasDSA()) { return glMapNamedBuffer(id, access);  }
+                BufferBinding binding(id);
+                return glMapBuffer(GL_COPY_WRITE_BUFFER, access);
+            }
+
+            GLboolean UnmapNamedBuffer(GLuint id)
+            {
+                if (hasDSA()) { return glUnmapNamedBuffer(id);  }
+                BufferBinding binding(id);
+                return glUnmapBuffer(GL_COPY_WRITE_BUFFER);
+            }
+
+            void NamedFramebufferDrawBuffers(GLuint id, GLsizei count, const GLenum* buffers)
+            {
+                if (hasDSA()) { glNamedFramebufferDrawBuffers(id, count, buffers); return; }
+                FramebufferBinding binding(id);
+                glDrawBuffers(count, buffers);
+            }
+
+            GLenum CheckNamedFramebufferStatus(GLuint id, GLenum target)
+            {
+                if (hasDSA()) { return glCheckNamedFramebufferStatus(id, target);  }
+                FramebufferBinding binding(id);
+                return glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
+            }
+
+            void ClearNamedFramebufferfv(GLuint id, GLenum buffer, GLint drawbuffer, const GLfloat* value)
+            {
+                if (hasDSA()) { glClearNamedFramebufferfv(id, buffer, drawbuffer, value); return; }
+                FramebufferBinding binding(id);
+                glClearBufferfv(buffer, drawbuffer, value);
+            }
+
+            void ClearNamedFramebufferiv(GLuint id, GLenum buffer, GLint drawbuffer, const GLint* value)
+            {
+                if (hasDSA()) { glClearNamedFramebufferiv(id, buffer, drawbuffer, value); return; }
+                FramebufferBinding binding(id);
+                glClearBufferiv(buffer, drawbuffer, value);
+            }
+
+            void NamedFramebufferTexture(GLuint id, GLenum attachment, GLuint texture, GLint level)
+            {
+                if (hasDSA()) { glNamedFramebufferTexture(id, attachment, texture, level); return; }
+                FramebufferBinding binding(id);
+                glFramebufferTexture(GL_DRAW_FRAMEBUFFER, attachment, texture, level);
+            }
+
+            void NamedFramebufferTextureLayer(GLuint id, GLenum attachment, GLuint texture, GLint level, GLint layer)
+            {
+                if (hasDSA()) { glNamedFramebufferTextureLayer(id, attachment, texture, level, layer); return; }
+                FramebufferBinding binding(id);
+                glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, attachment, texture, level, layer);
+            }
+
+            void ProgramUniform1f(GLuint program, GLint location, GLfloat value)
+            {
+                if (hasDSA()) { glProgramUniform1f(program, location, value); return; }
+                ProgramBinding binding(program);
+                glUniform1f(location, value);
+            }
+
+            void ProgramUniform1i(GLuint program, GLint location, GLint value)
+            {
+                if (hasDSA()) { glProgramUniform1i(program, location, value); return; }
+                ProgramBinding binding(program);
+                glUniform1i(location, value);
+            }
+
+            void ProgramUniform1ui(GLuint program, GLint location, GLuint value)
+            {
+                if (hasDSA()) { glProgramUniform1ui(program, location, value); return; }
+                ProgramBinding binding(program);
+                glUniform1ui(location, value);
+            }
+
+            void ProgramUniform2fv(GLuint program, GLint location, GLsizei count, const GLfloat* value)
+            {
+                if (hasDSA()) { glProgramUniform2fv(program, location, count, value); return; }
+                ProgramBinding binding(program);
+                glUniform2fv(location, count, value);
+            }
+
+            void ProgramUniform3fv(GLuint program, GLint location, GLsizei count, const GLfloat* value)
+            {
+                if (hasDSA()) { glProgramUniform3fv(program, location, count, value); return; }
+                ProgramBinding binding(program);
+                glUniform3fv(location, count, value);
+            }
+
+            void ProgramUniform4fv(GLuint program, GLint location, GLsizei count, const GLfloat* value)
+            {
+                if (hasDSA()) { glProgramUniform4fv(program, location, count, value); return; }
+                ProgramBinding binding(program);
+                glUniform4fv(location, count, value);
+            }
+
+            void ProgramUniformMatrix3fv(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat* value)
+            {
+                if (hasDSA()) { glProgramUniformMatrix3fv(program, location, count, transpose, value); return; }
+                ProgramBinding binding(program);
+                glUniformMatrix3fv(location, count, transpose, value);
+            }
+
+            void ProgramUniformMatrix4fv(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat* value)
+            {
+                if (hasDSA()) { glProgramUniformMatrix4fv(program, location, count, transpose, value); return; }
+                ProgramBinding binding(program);
+                glUniformMatrix4fv(location, count, transpose, value);
+            }
+
+            void GenerateTextureMipmap(GLenum target, GLuint id)
+            {
+                if (hasDSA()) { glGenerateTextureMipmap(id); return; }
+                TextureBinding binding(target, id);
+                glGenerateMipmap(target);
+            }
+
+            void TextureParameteri(GLenum target, GLuint id, GLenum pname, GLint value)
+            {
+                if (hasDSA()) { glTextureParameteri(id, pname, value); return; }
+                TextureBinding binding(target, id);
+                glTexParameteri(target, pname, value);
+            }
+
+            void TextureParameterf(GLenum target, GLuint id, GLenum pname, GLfloat value)
+            {
+                if (hasDSA()) { glTextureParameterf(id, pname, value); return; }
+                TextureBinding binding(target, id);
+                glTexParameterf(target, pname, value);
+            }
+
+            void TextureParameterfv(GLenum target, GLuint id, GLenum pname, const GLfloat* value)
+            {
+                if (hasDSA()) { glTextureParameterfv(id, pname, value); return; }
+                TextureBinding binding(target, id);
+                glTexParameterfv(target, pname, value);
+            }
+        } // namespace detail
+
         DebugMarker::DebugMarker(std::string_view name)
         {
-            glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, name.data());
+            if (GLAD_GL_VERSION_4_3 && glPushDebugGroup && glPopDebugGroup)
+                glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, static_cast<GLsizei>(name.size()), name.data());
         }
-        DebugMarker::~DebugMarker() { glPopDebugGroup(); }
+        DebugMarker::~DebugMarker()
+        {
+            if (GLAD_GL_VERSION_4_3 && glPushDebugGroup && glPopDebugGroup)
+                glPopDebugGroup();
+        }
 
         void GraphicsContext::init(const std::shared_ptr<window::Window>& window)
         {
@@ -1550,7 +1832,8 @@ namespace vgfw
 
             int version = loadGl();
 
-            assert(version);
+            if (!version)
+                throw std::runtime_error("Failed to load OpenGL functions with GLAD");
             if (version)
             {
                 int minMajor = getMinMajor();
@@ -1565,10 +1848,15 @@ namespace vgfw
 
                 VGFW_INFO("[GraphicsContext] OpenGL Context Info:\n {0}", ss.str());
 
-                assert(GLVersion.major > minMajor || (GLVersion.major == minMajor && GLVersion.minor >= minMinor));
+                if (GLVersion.major < minMajor || (GLVersion.major == minMajor && GLVersion.minor < minMinor))
+                    throw std::runtime_error("VGFW requires OpenGL 3.3 or newer");
+                if (!GLAD_GL_VERSION_3_3 || !glGenVertexArrays || !glBindVertexArray || !glGenBuffers ||
+                    !glBindBuffer || !glBufferData || !glGenFramebuffers || !glCreateShader)
+                    throw std::runtime_error("Required OpenGL 3.3 functions are unavailable");
             }
 
-            m_SupportDSA = GLAD_GL_VERSION_4_5 || GLAD_GL_VERSION_4_6;
+            m_SupportDSA = GLAD_GL_VERSION_4_5 && glCreateVertexArrays && glCreateBuffers &&
+                           glCreateTextures && glCreateFramebuffers && glNamedBufferStorage;
 
             VGFW_PROFILE_GL_INIT_CONTEXT
         }
@@ -1959,7 +2247,7 @@ namespace vgfw
             return GL_NONE;
         }
 
-        RenderContext::RenderContext() { glCreateVertexArrays(1, &m_DummyVAO); }
+        RenderContext::RenderContext() { glGenVertexArrays(1, &m_DummyVAO); }
 
         RenderContext::~RenderContext()
         {
@@ -2004,8 +2292,8 @@ namespace vgfw
         Buffer RenderContext::createBuffer(GLsizeiptr size, const void* data)
         {
             GLuint buffer;
-            glCreateBuffers(1, &buffer);
-            glNamedBufferStorage(buffer, size, data, GL_DYNAMIC_STORAGE_BIT);
+            detail::CreateBuffers(1, &buffer);
+            detail::NamedBufferStorage(buffer, size, data, GL_DYNAMIC_STORAGE_BIT | GL_MAP_WRITE_BIT);
 
             return {buffer, size};
         }
@@ -2052,6 +2340,8 @@ namespace vgfw
 
         GLuint RenderContext::createComputeProgram(const std::string& compSource)
         {
+            if (!GLAD_GL_VERSION_4_3 || !glDispatchCompute)
+                throw std::runtime_error("Compute shaders require OpenGL 4.3");
             return createShaderProgram({
                 createShaderObject(GL_COMPUTE_SHADER, compSource),
             });
@@ -2089,7 +2379,7 @@ namespace vgfw
         RenderContext& RenderContext::generateMipmaps(Texture& texture)
         {
             assert(texture);
-            glGenerateTextureMipmap(texture.m_Id);
+            detail::GenerateTextureMipmap(texture.m_Type, texture.m_Id);
 
             return *this;
         }
@@ -2098,23 +2388,24 @@ namespace vgfw
         {
             assert(texture);
 
-            glTextureParameteri(texture.m_Id,
+            detail::TextureParameteri(texture.m_Type, texture.m_Id,
                                 GL_TEXTURE_MIN_FILTER,
                                 selectTextureMinFilter(samplerInfo.minFilter, samplerInfo.mipmapMode));
-            glTextureParameteri(texture.m_Id, GL_TEXTURE_MAG_FILTER, static_cast<GLenum>(samplerInfo.magFilter));
-            glTextureParameteri(texture.m_Id, GL_TEXTURE_WRAP_S, static_cast<GLenum>(samplerInfo.addressModeS));
-            glTextureParameteri(texture.m_Id, GL_TEXTURE_WRAP_T, static_cast<GLenum>(samplerInfo.addressModeT));
-            glTextureParameteri(texture.m_Id, GL_TEXTURE_WRAP_R, static_cast<GLenum>(samplerInfo.addressModeR));
+            detail::TextureParameteri(texture.m_Type, texture.m_Id, GL_TEXTURE_MAG_FILTER, static_cast<GLenum>(samplerInfo.magFilter));
+            detail::TextureParameteri(texture.m_Type, texture.m_Id, GL_TEXTURE_WRAP_S, static_cast<GLenum>(samplerInfo.addressModeS));
+            detail::TextureParameteri(texture.m_Type, texture.m_Id, GL_TEXTURE_WRAP_T, static_cast<GLenum>(samplerInfo.addressModeT));
+            detail::TextureParameteri(texture.m_Type, texture.m_Id, GL_TEXTURE_WRAP_R, static_cast<GLenum>(samplerInfo.addressModeR));
 
-            glTextureParameterf(texture.m_Id, GL_TEXTURE_MAX_ANISOTROPY, samplerInfo.maxAnisotropy);
+            if (detail::hasAnisotropy())
+                detail::TextureParameterf(texture.m_Type, texture.m_Id, GL_TEXTURE_MAX_ANISOTROPY, samplerInfo.maxAnisotropy);
 
             if (samplerInfo.compareOperator.has_value())
             {
-                glTextureParameteri(texture.m_Id, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+                detail::TextureParameteri(texture.m_Type, texture.m_Id, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
                 glTextureParameteri(
                     texture.m_Id, GL_TEXTURE_COMPARE_FUNC, static_cast<GLenum>(*samplerInfo.compareOperator));
             }
-            glTextureParameterfv(texture.m_Id, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(samplerInfo.borderColor));
+            detail::TextureParameterfv(texture.m_Type, texture.m_Id, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(samplerInfo.borderColor));
 
             return *this;
         }
@@ -2122,7 +2413,7 @@ namespace vgfw
         GLuint RenderContext::createSampler(const SamplerInfo& samplerInfo)
         {
             GLuint sampler {GL_NONE};
-            glCreateSamplers(1, &sampler);
+            detail::CreateSamplers(1, &sampler);
 
             glSamplerParameteri(
                 sampler, GL_TEXTURE_MIN_FILTER, selectTextureMinFilter(samplerInfo.minFilter, samplerInfo.mipmapMode));
@@ -2131,7 +2422,8 @@ namespace vgfw
             glSamplerParameteri(sampler, GL_TEXTURE_WRAP_T, static_cast<GLenum>(samplerInfo.addressModeT));
             glSamplerParameteri(sampler, GL_TEXTURE_WRAP_R, static_cast<GLenum>(samplerInfo.addressModeR));
 
-            glSamplerParameterf(sampler, GL_TEXTURE_MAX_ANISOTROPY, samplerInfo.maxAnisotropy);
+            if (detail::hasAnisotropy())
+                glSamplerParameterf(sampler, GL_TEXTURE_MAX_ANISOTROPY, samplerInfo.maxAnisotropy);
 
             if (samplerInfo.compareOperator.has_value())
             {
@@ -2147,8 +2439,49 @@ namespace vgfw
         RenderContext& RenderContext::clear(Texture& texture)
         {
             assert(texture);
-            uint8_t v {0};
-            glClearTexImage(texture.m_Id, 0, GL_RED, GL_UNSIGNED_BYTE, &v);
+            uint32_t v {0};
+            if (GLAD_GL_VERSION_4_4 && glClearTexImage)
+                glClearTexImage(texture.m_Id, 0, detail::transferFormat(texture.m_PixelFormat).first, GL_UNSIGNED_BYTE, &v);
+            else
+            {
+                // Clear one slice at a time, without depending on framebuffer renderability.
+                detail::TextureBinding binding(texture.m_Type, texture.m_Id);
+                const auto [format, type] = detail::transferFormat(texture.m_PixelFormat);
+                const auto width = texture.m_Extent.width;
+                const auto height = std::max(1u, texture.m_Extent.height);
+                std::vector<uint32_t> zeros(static_cast<size_t>(width) * height * 4, 0);
+                const GLenum states[] = {GL_UNPACK_ALIGNMENT, GL_UNPACK_ROW_LENGTH, GL_UNPACK_IMAGE_HEIGHT,
+                                         GL_UNPACK_SKIP_PIXELS, GL_UNPACK_SKIP_ROWS, GL_UNPACK_SKIP_IMAGES,
+                                         GL_UNPACK_SWAP_BYTES, GL_UNPACK_LSB_FIRST};
+                GLint previous[8], unpackBuffer;
+                for (size_t i = 0; i < 8; ++i)
+                {
+                    glGetIntegerv(states[i], &previous[i]);
+                    glPixelStorei(states[i], i == 0 ? 1 : 0);
+                }
+                glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &unpackBuffer);
+                glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+                const auto target = texture.m_Type;
+                if (target == GL_TEXTURE_1D)
+                    glTexSubImage1D(target, 0, 0, width, format, type, zeros.data());
+                else if (target == GL_TEXTURE_2D)
+                    glTexSubImage2D(target, 0, 0, 0, width, height, format, type, zeros.data());
+                else if (target == GL_TEXTURE_CUBE_MAP)
+                    for (uint32_t face = 0; face < 6; ++face)
+                        glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, 0, 0, width, height, format, type, zeros.data());
+                else if (target == GL_TEXTURE_1D_ARRAY)
+                    for (uint32_t layer = 0; layer < texture.m_NumLayers; ++layer)
+                        glTexSubImage2D(target, 0, 0, layer, width, 1, format, type, zeros.data());
+                else
+                {
+                    const auto slices = target == GL_TEXTURE_3D ? texture.m_Depth :
+                                        texture.m_NumLayers * (target == GL_TEXTURE_CUBE_MAP_ARRAY ? 6 : 1);
+                    for (uint32_t layer = 0; layer < slices; ++layer)
+                        glTexSubImage3D(target, 0, 0, 0, layer, width, height, 1, format, type, zeros.data());
+                }
+                glBindBuffer(GL_PIXEL_UNPACK_BUFFER, unpackBuffer);
+                for (size_t i = 0; i < 8; ++i) glPixelStorei(states[i], previous[i]);
+            }
 
             return *this;
         }
@@ -2177,6 +2510,31 @@ namespace vgfw
         {
             assert(texture && image.pixels != nullptr);
 
+            if (!detail::hasDSA())
+            {
+                detail::TextureBinding binding(texture.m_Type, texture.m_Id);
+                const auto target = texture.m_Type;
+                switch (target)
+                {
+                    case GL_TEXTURE_1D:
+                        glTexSubImage1D(target, mipLevel, 0, dimensions.x, image.format, image.dataType, image.pixels); break;
+                    case GL_TEXTURE_1D_ARRAY:
+                        glTexSubImage2D(target, mipLevel, 0, layer, dimensions.x, 1, image.format, image.dataType, image.pixels); break;
+                    case GL_TEXTURE_2D:
+                        glTexSubImage2D(target, mipLevel, 0, 0, dimensions.x, dimensions.y, image.format, image.dataType, image.pixels); break;
+                    case GL_TEXTURE_CUBE_MAP:
+                        glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, mipLevel, 0, 0, dimensions.x, dimensions.y, image.format, image.dataType, image.pixels); break;
+                    case GL_TEXTURE_2D_ARRAY:
+                    case GL_TEXTURE_CUBE_MAP_ARRAY:
+                        glTexSubImage3D(target, mipLevel, 0, 0, target == GL_TEXTURE_CUBE_MAP_ARRAY ? layer * 6 + face : layer,
+                                        dimensions.x, dimensions.y, 1, image.format, image.dataType, image.pixels); break;
+                    case GL_TEXTURE_3D:
+                        glTexSubImage3D(target, mipLevel, 0, 0, 0, dimensions.x, dimensions.y, dimensions.z,
+                                        image.format, image.dataType, image.pixels); break;
+                    default: throw std::runtime_error("Unsupported texture upload target");
+                }
+                return *this;
+            }
             switch (texture.m_Type)
             {
                 case GL_TEXTURE_1D:
@@ -2185,7 +2543,7 @@ namespace vgfw
                     break;
                 case GL_TEXTURE_1D_ARRAY:
                     glTextureSubImage2D(
-                        texture.m_Id, mipLevel, 0, 0, dimensions.x, layer, image.format, image.dataType, image.pixels);
+                        texture.m_Id, mipLevel, 0, layer, dimensions.x, 1, image.format, image.dataType, image.pixels);
                     break;
                 case GL_TEXTURE_2D:
                     glTextureSubImage2D(texture.m_Id,
@@ -2247,7 +2605,7 @@ namespace vgfw
                                         zoffset,
                                         dimensions.x,
                                         dimensions.y,
-                                        6 * texture.m_NumLayers,
+                                        1,
                                         image.format,
                                         image.dataType,
                                         image.pixels);
@@ -2264,8 +2622,16 @@ namespace vgfw
         {
             assert(buffer);
 
-            uint8_t v {0};
-            glClearNamedBufferData(buffer.m_Id, GL_R8, GL_RED, GL_UNSIGNED_BYTE, &v);
+            uint32_t v {0};
+            if (detail::hasDSA()) glClearNamedBufferData(buffer.m_Id, GL_R8, GL_RED, GL_UNSIGNED_BYTE, &v);
+            else
+            {
+                detail::BufferBinding binding(buffer.m_Id);
+                GLint64 size;
+                glGetBufferParameteri64v(GL_COPY_WRITE_BUFFER, GL_BUFFER_SIZE, &size);
+                std::vector<uint8_t> zeros(static_cast<size_t>(size), 0);
+                glBufferSubData(GL_COPY_WRITE_BUFFER, 0, size, zeros.data());
+            }
 
             return *this;
         }
@@ -2275,7 +2641,7 @@ namespace vgfw
             assert(buffer);
 
             if (size > 0 && data != nullptr)
-                glNamedBufferSubData(buffer.m_Id, offset, size, data);
+                detail::NamedBufferSubData(buffer.m_Id, offset, size, data);
 
             return *this;
         }
@@ -2285,7 +2651,7 @@ namespace vgfw
             assert(buffer);
 
             if (!buffer.isMapped())
-                buffer.m_MappedMemory = glMapNamedBuffer(buffer.m_Id, GL_WRITE_ONLY);
+                buffer.m_MappedMemory = detail::MapNamedBuffer(buffer.m_Id, GL_WRITE_ONLY);
 
             return buffer.m_MappedMemory;
         }
@@ -2296,7 +2662,7 @@ namespace vgfw
 
             if (buffer.isMapped())
             {
-                glUnmapNamedBuffer(buffer.m_Id);
+                detail::UnmapNamedBuffer(buffer.m_Id);
                 buffer.m_MappedMemory = nullptr;
             }
 
@@ -2341,6 +2707,8 @@ namespace vgfw
         RenderContext& RenderContext::dispatch(GLuint computeProgram, const glm::uvec3& numGroups)
         {
             setShaderProgram(computeProgram);
+            if (!GLAD_GL_VERSION_4_3 || !glDispatchCompute)
+                throw std::runtime_error("Compute shaders require OpenGL 4.3");
             glDispatchCompute(numGroups.x, numGroups.y, numGroups.z);
 
             return *this;
@@ -2351,7 +2719,7 @@ namespace vgfw
             assert(!m_RenderingStarted);
 
             GLuint framebuffer;
-            glCreateFramebuffers(1, &framebuffer);
+            detail::CreateFramebuffers(1, &framebuffer);
             if (renderingInfo.depthAttachment.has_value())
             {
                 attachTexture(framebuffer, GL_DEPTH_ATTACHMENT, *renderingInfo.depthAttachment);
@@ -2364,10 +2732,20 @@ namespace vgfw
             {
                 std::vector<GLenum> colorBuffers(n);
                 std::iota(colorBuffers.begin(), colorBuffers.end(), GL_COLOR_ATTACHMENT0);
-                glNamedFramebufferDrawBuffers(framebuffer, colorBuffers.size(), colorBuffers.data());
+                detail::NamedFramebufferDrawBuffers(framebuffer, colorBuffers.size(), colorBuffers.data());
+            }
+            else
+            {
+                const GLenum none = GL_NONE;
+                detail::NamedFramebufferDrawBuffers(framebuffer, 1, &none);
+                GLint previous;
+                glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &previous);
+                glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer);
+                glReadBuffer(GL_NONE);
+                glBindFramebuffer(GL_READ_FRAMEBUFFER, previous);
             }
 #ifdef _DEBUG
-            const auto status = glCheckNamedFramebufferStatus(framebuffer, GL_DRAW_FRAMEBUFFER);
+            const auto status = detail::CheckNamedFramebufferStatus(framebuffer, GL_DRAW_FRAMEBUFFER);
             assert(GL_FRAMEBUFFER_COMPLETE == status);
 #endif
 
@@ -2381,14 +2759,14 @@ namespace vgfw
                     setDepthWrite(true);
 
                     const auto clearValue = std::get<float>(*renderingInfo.depthAttachment->clearValue);
-                    glClearNamedFramebufferfv(framebuffer, GL_DEPTH, 0, &clearValue);
+                    detail::ClearNamedFramebufferfv(framebuffer, GL_DEPTH, 0, &clearValue);
                 }
             for (int32_t i {0}; const auto& attachment : renderingInfo.colorAttachments)
             {
                 if (attachment.clearValue.has_value())
                 {
                     const auto& clearValue = std::get<glm::vec4>(*attachment.clearValue);
-                    glClearNamedFramebufferfv(framebuffer, GL_COLOR, i, glm::value_ptr(clearValue));
+                    detail::ClearNamedFramebufferfv(framebuffer, GL_COLOR, i, glm::value_ptr(clearValue));
                 }
                 ++i;
             }
@@ -2410,13 +2788,13 @@ namespace vgfw
             if (clearDepth.has_value())
             {
                 setDepthWrite(true);
-                glClearNamedFramebufferfv(GL_NONE, GL_DEPTH, 0, &clearDepth.value());
+                detail::ClearNamedFramebufferfv(GL_NONE, GL_DEPTH, 0, &clearDepth.value());
             }
             if (clearStencil.has_value())
-                glClearNamedFramebufferiv(GL_NONE, GL_STENCIL, 0, &clearStencil.value());
+                detail::ClearNamedFramebufferiv(GL_NONE, GL_STENCIL, 0, &clearStencil.value());
             if (clearColor.has_value())
             {
-                glClearNamedFramebufferfv(GL_NONE, GL_COLOR, 0, glm::value_ptr(clearColor.value()));
+                detail::ClearNamedFramebufferfv(GL_NONE, GL_COLOR, 0, glm::value_ptr(clearColor.value()));
             }
 
             return *this;
@@ -2449,6 +2827,17 @@ namespace vgfw
                 setScissorTest(state.scissorTest);
             }
 
+            if (!GLAD_GL_VERSION_4_0)
+            {
+                const BlendState* shared = nullptr;
+                for (const auto& state : gp.m_BlendStates)
+                    if (state.enabled)
+                    {
+                        if (shared && state != *shared)
+                            throw std::runtime_error("Independent blend functions require OpenGL 4.0");
+                        shared = &state;
+                    }
+            }
             for (int32_t i {0}; i < gp.m_BlendStates.size(); ++i)
                 setBlendState(i, gp.m_BlendStates[i]);
 
@@ -2462,7 +2851,7 @@ namespace vgfw
         {
             const auto location = glGetUniformLocation(m_CurrentPipeline.m_Program, name.data());
             if (location != GL_INVALID_INDEX)
-                glProgramUniform1f(m_CurrentPipeline.m_Program, location, f);
+                detail::ProgramUniform1f(m_CurrentPipeline.m_Program, location, f);
             return *this;
         }
 
@@ -2470,7 +2859,7 @@ namespace vgfw
         {
             const auto location = glGetUniformLocation(m_CurrentPipeline.m_Program, name.data());
             if (location != GL_INVALID_INDEX)
-                glProgramUniform1i(m_CurrentPipeline.m_Program, location, i);
+                detail::ProgramUniform1i(m_CurrentPipeline.m_Program, location, i);
             return *this;
         }
 
@@ -2478,7 +2867,7 @@ namespace vgfw
         {
             const auto location = glGetUniformLocation(m_CurrentPipeline.m_Program, name.data());
             if (location != GL_INVALID_INDEX)
-                glProgramUniform1ui(m_CurrentPipeline.m_Program, location, i);
+                detail::ProgramUniform1ui(m_CurrentPipeline.m_Program, location, i);
             return *this;
         }
 
@@ -2487,7 +2876,7 @@ namespace vgfw
             const auto location = glGetUniformLocation(m_CurrentPipeline.m_Program, name.data());
             if (location != GL_INVALID_INDEX)
             {
-                glProgramUniform2fv(m_CurrentPipeline.m_Program, location, 1, glm::value_ptr(v));
+                detail::ProgramUniform2fv(m_CurrentPipeline.m_Program, location, 1, glm::value_ptr(v));
             }
             return *this;
         }
@@ -2497,7 +2886,7 @@ namespace vgfw
             const auto location = glGetUniformLocation(m_CurrentPipeline.m_Program, name.data());
             if (location != GL_INVALID_INDEX)
             {
-                glProgramUniform3fv(m_CurrentPipeline.m_Program, location, 1, glm::value_ptr(v));
+                detail::ProgramUniform3fv(m_CurrentPipeline.m_Program, location, 1, glm::value_ptr(v));
             }
             return *this;
         }
@@ -2507,7 +2896,7 @@ namespace vgfw
             const auto location = glGetUniformLocation(m_CurrentPipeline.m_Program, name.data());
             if (location != GL_INVALID_INDEX)
             {
-                glProgramUniform4fv(m_CurrentPipeline.m_Program, location, 1, glm::value_ptr(v));
+                detail::ProgramUniform4fv(m_CurrentPipeline.m_Program, location, 1, glm::value_ptr(v));
             }
             return *this;
         }
@@ -2517,7 +2906,7 @@ namespace vgfw
             const auto location = glGetUniformLocation(m_CurrentPipeline.m_Program, name.data());
             if (location != GL_INVALID_INDEX)
             {
-                glProgramUniformMatrix3fv(m_CurrentPipeline.m_Program, location, 1, GL_FALSE, glm::value_ptr(m));
+                detail::ProgramUniformMatrix3fv(m_CurrentPipeline.m_Program, location, 1, GL_FALSE, glm::value_ptr(m));
             }
             return *this;
         }
@@ -2527,7 +2916,7 @@ namespace vgfw
             const auto location = glGetUniformLocation(m_CurrentPipeline.m_Program, name.data());
             if (location != GL_INVALID_INDEX)
             {
-                glProgramUniformMatrix4fv(m_CurrentPipeline.m_Program, location, 1, GL_FALSE, glm::value_ptr(m));
+                detail::ProgramUniformMatrix4fv(m_CurrentPipeline.m_Program, location, 1, GL_FALSE, glm::value_ptr(m));
             }
             return *this;
         }
@@ -2535,6 +2924,8 @@ namespace vgfw
         RenderContext& RenderContext::bindImage(GLuint unit, const Texture& texture, GLint mipLevel, GLenum access)
         {
             assert(texture && mipLevel < texture.m_NumMipLevels);
+            if (!GLAD_GL_VERSION_4_2 || !glBindImageTexture)
+                throw std::runtime_error("Image load/store requires OpenGL 4.2");
             glBindImageTexture(
                 unit, texture.m_Id, mipLevel, GL_FALSE, 0, access, static_cast<GLenum>(texture.m_PixelFormat));
             return *this;
@@ -2543,7 +2934,15 @@ namespace vgfw
         RenderContext& RenderContext::bindTexture(GLuint unit, const Texture& texture, std::optional<GLuint> samplerId)
         {
             assert(texture);
-            glBindTextureUnit(unit, texture.m_Id);
+            if (detail::hasDSA()) glBindTextureUnit(unit, texture.m_Id);
+            else
+            {
+                GLint previous;
+                glGetIntegerv(GL_ACTIVE_TEXTURE, &previous);
+                glActiveTexture(GL_TEXTURE0 + unit);
+                glBindTexture(texture.m_Type, texture.m_Id);
+                glActiveTexture(previous);
+            }
             if (samplerId.has_value())
                 glBindSampler(unit, *samplerId);
             return *this;
@@ -2559,6 +2958,8 @@ namespace vgfw
         RenderContext& RenderContext::bindStorageBuffer(GLuint index, const StorageBuffer& buffer)
         {
             assert(buffer);
+            if (!GLAD_GL_VERSION_4_3)
+                throw std::runtime_error("Shader storage buffers require OpenGL 4.3");
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, index, buffer.m_Id);
             return *this;
         }
@@ -2604,6 +3005,8 @@ namespace vgfw
                                            uint32_t                              numInstances)
         {
             VGFW_PROFILE_FUNCTION
+            if (geometryInfo.topology == PrimitiveTopology::ePatchList && !GLAD_GL_VERSION_4_0)
+                throw std::runtime_error("Tessellation requires OpenGL 4.0");
             if (vertexBuffer.has_value())
                 setVertexBuffer(*vertexBuffer);
 
@@ -2643,6 +3046,12 @@ namespace vgfw
         GLuint RenderContext::createVertexArray(const VertexAttributes& attributes)
         {
             GLuint vao;
+            if (!detail::hasDSA())
+            {
+                glGenVertexArrays(1, &vao);
+                m_VertexArrayAttributes.emplace(vao, attributes);
+                return vao;
+            }
             glCreateVertexArrays(1, &vao);
 
             for (const auto& [location, attribute] : attributes)
@@ -2651,7 +3060,7 @@ namespace vgfw
                 assert(type != GL_INVALID_INDEX);
 
                 glEnableVertexArrayAttrib(vao, location);
-                if (attribute.vertType == VertexAttribute::Type::eInt4)
+                if (attribute.vertType == VertexAttribute::Type::eInt || attribute.vertType == VertexAttribute::Type::eInt4)
                 {
                     glVertexArrayAttribIFormat(vao, location, size, type, attribute.offset);
                 }
@@ -2700,7 +3109,48 @@ namespace vgfw
                 }
             }
 
+            if (target == GL_TEXTURE_CUBE_MAP_ARRAY && !GLAD_GL_VERSION_4_0)
+                throw std::runtime_error("Cubemap arrays require OpenGL 4.0");
+
             GLuint id {GL_NONE};
+            if (!detail::hasDSA())
+            {
+                glGenTextures(1, &id);
+                detail::TextureBinding binding(target, id);
+                const auto [format, type] = detail::transferFormat(pixelFormat);
+                GLint unpackBuffer;
+                glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &unpackBuffer);
+                glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+                for (uint32_t level = 0; level < numMipLevels; ++level)
+                {
+                    const auto w = std::max(1u, extent.width >> level);
+                    const auto h = std::max(1u, extent.height >> level);
+                    const auto d = std::max(1u, depth >> level);
+                    const auto internal = static_cast<GLint>(pixelFormat);
+                    switch (target)
+                    {
+                        case GL_TEXTURE_1D:
+                            glTexImage1D(target, level, internal, w, 0, format, type, nullptr); break;
+                        case GL_TEXTURE_1D_ARRAY:
+                            glTexImage2D(target, level, internal, w, numLayers, 0, format, type, nullptr); break;
+                        case GL_TEXTURE_2D:
+                            glTexImage2D(target, level, internal, w, h, 0, format, type, nullptr); break;
+                        case GL_TEXTURE_2D_ARRAY:
+                            glTexImage3D(target, level, internal, w, h, numLayers, 0, format, type, nullptr); break;
+                        case GL_TEXTURE_3D:
+                            glTexImage3D(target, level, internal, w, h, d, 0, format, type, nullptr); break;
+                        case GL_TEXTURE_CUBE_MAP:
+                            for (uint32_t face = 0; face < 6; ++face)
+                                glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, level, internal, w, h, 0, format, type, nullptr);
+                            break;
+                        case GL_TEXTURE_CUBE_MAP_ARRAY:
+                            glTexImage3D(target, level, internal, w, h, numLayers * 6, 0, format, type, nullptr); break;
+                    }
+                }
+                glBindBuffer(GL_PIXEL_UNPACK_BUFFER, unpackBuffer);
+                glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, numMipLevels - 1);
+                return Texture {id, target, pixelFormat, extent, depth, numMipLevels, numLayers};
+            }
             glCreateTextures(target, 1, &id);
 
             const auto internalFormat = static_cast<GLenum>(pixelFormat);
@@ -2743,24 +3193,6 @@ namespace vgfw
             };
         }
 
-        void RenderContext::createFaceView(Texture& cubeMap, GLuint mipLevel, GLuint layer, GLuint face)
-        {
-            assert(cubeMap.m_Type == GL_TEXTURE_CUBE_MAP || cubeMap.m_Type == GL_TEXTURE_CUBE_MAP_ARRAY);
-
-            if (cubeMap.m_View != GL_NONE)
-                glDeleteTextures(1, &cubeMap.m_View);
-            glGenTextures(1, &cubeMap.m_View);
-
-            glTextureView(cubeMap.m_View,
-                          GL_TEXTURE_2D,
-                          cubeMap.m_Id,
-                          static_cast<GLenum>(cubeMap.m_PixelFormat),
-                          mipLevel,
-                          1,
-                          (layer * 6) + face,
-                          1);
-        }
-
         void RenderContext::attachTexture(GLuint framebuffer, GLenum attachment, const AttachmentInfo& info)
         {
             const auto& [image, mipLevel, maybeLayer, maybeFace, _] = info;
@@ -2769,22 +3201,29 @@ namespace vgfw
             {
                 case GL_TEXTURE_CUBE_MAP:
                 case GL_TEXTURE_CUBE_MAP_ARRAY:
-                    createFaceView(image, mipLevel, maybeLayer.value_or(0), maybeFace.value_or(0));
-                    glNamedFramebufferTexture(framebuffer, attachment, image.m_View, 0);
+                {
+                    detail::FramebufferBinding binding(framebuffer);
+                    if (image.m_Type == GL_TEXTURE_CUBE_MAP)
+                        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, attachment,
+                                               GL_TEXTURE_CUBE_MAP_POSITIVE_X + maybeFace.value_or(0), image.m_Id, mipLevel);
+                    else
+                        glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, attachment, image.m_Id, mipLevel,
+                                                  maybeLayer.value_or(0) * 6 + maybeFace.value_or(0));
+                }
                     break;
 
                 case GL_TEXTURE_2D:
-                    glNamedFramebufferTexture(framebuffer, attachment, image.m_Id, mipLevel);
+                    detail::NamedFramebufferTexture(framebuffer, attachment, image.m_Id, mipLevel);
                     break;
 
                 case GL_TEXTURE_2D_ARRAY:
                     assert(maybeLayer.has_value());
-                    glNamedFramebufferTextureLayer(
+                    detail::NamedFramebufferTextureLayer(
                         framebuffer, attachment, image.m_Id, mipLevel, maybeLayer.value_or(0));
                     break;
 
                 case GL_TEXTURE_3D:
-                    glNamedFramebufferTexture(framebuffer, attachment, image.m_Id, 0);
+                    detail::NamedFramebufferTexture(framebuffer, attachment, image.m_Id, 0);
                     break;
 
                 default:
@@ -2878,14 +3317,33 @@ namespace vgfw
         {
             const auto vao = m_CurrentPipeline.m_VAO;
             assert(vertexBuffer && vao != GL_NONE);
-            glVertexArrayVertexBuffer(vao, 0, vertexBuffer.m_Id, 0, vertexBuffer.getStride());
+            if (detail::hasDSA())
+                glVertexArrayVertexBuffer(vao, 0, vertexBuffer.m_Id, 0, vertexBuffer.getStride());
+            else
+            {
+                GLint previous;
+                glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &previous);
+                glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer.m_Id);
+                for (const auto& [location, attribute] : m_VertexArrayAttributes.at(vao))
+                {
+                    const auto [type, size, normalized] = statAttribute(attribute.vertType);
+                    const auto offset = reinterpret_cast<const void*>(static_cast<uintptr_t>(attribute.offset));
+                    glEnableVertexAttribArray(location);
+                    if (attribute.vertType == VertexAttribute::Type::eInt || attribute.vertType == VertexAttribute::Type::eInt4)
+                        glVertexAttribIPointer(location, size, type, vertexBuffer.getStride(), offset);
+                    else
+                        glVertexAttribPointer(location, size, type, normalized, vertexBuffer.getStride(), offset);
+                }
+                glBindBuffer(GL_ARRAY_BUFFER, previous);
+            }
         }
 
         void RenderContext::setIndexBuffer(const IndexBuffer& indexBuffer) const
         {
             const auto vao = m_CurrentPipeline.m_VAO;
             assert(indexBuffer && vao != GL_NONE);
-            glVertexArrayElementBuffer(vao, indexBuffer.m_Id);
+            if (detail::hasDSA()) glVertexArrayElementBuffer(vao, indexBuffer.m_Id);
+            else glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer.m_Id);
         }
 
         void RenderContext::setDepthTest(bool enabled, CompareOp depthFunc)
@@ -2984,6 +3442,18 @@ namespace vgfw
         void RenderContext::setBlendState(GLuint index, const BlendState& state)
         {
             auto& current = m_CurrentPipeline.m_BlendStates[index];
+            if (!GLAD_GL_VERSION_4_0)
+            {
+                state.enabled ? glEnablei(GL_BLEND, index) : glDisablei(GL_BLEND, index);
+                if (state.enabled)
+                {
+                    glBlendEquationSeparate(static_cast<GLenum>(state.colorOp), static_cast<GLenum>(state.alphaOp));
+                    glBlendFuncSeparate(static_cast<GLenum>(state.srcColor), static_cast<GLenum>(state.destColor),
+                                        static_cast<GLenum>(state.srcAlpha), static_cast<GLenum>(state.destAlpha));
+                }
+                current = state;
+                return;
+            }
             if (state != current)
             {
                 if (state.enabled != current.enabled)
